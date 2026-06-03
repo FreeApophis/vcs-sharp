@@ -169,7 +169,7 @@ public sealed class Video
         {
             var sheet = new ContactSheet(options)
             {
-                HeaderLinesOverride = BuildHeaderLines(info, options),
+                HeaderOverride = HeaderBuilder.Build(System.IO.Path.GetFileName(Path), info),
             };
             return sheet.Render(thumbs, options.Title);
         }
@@ -191,62 +191,5 @@ public sealed class Video
     {
         var bytes = await BuildContactSheetAsync(options, progress, ct).ConfigureAwait(false);
         await File.WriteAllBytesAsync(outputPath, bytes, ct).ConfigureAwait(false);
-    }
-
-    private string[] BuildHeaderLines(VideoInfo info, ContactSheetOptions options)
-    {
-        if (!options.ShowHeader)
-        {
-            return [];
-        }
-
-        var v = info.Video;
-        var a = info.Audio;
-        var lines = new List<string>
-        {
-            $"File: {System.IO.Path.GetFileName(Path)}  ({FormatBytes(info.FileSize)})",
-            $"Duration: {FormatDuration(info.Duration)}" +
-                (v != null ? $"   Resolution: {v.Width}x{v.Height}" : string.Empty) +
-                (v?.FrameRate is { } fps ? $"   {fps:0.##} fps" : string.Empty),
-        };
-
-        var codecLine = string.Empty;
-        if (v?.Codec != null)
-        {
-            codecLine += $"Video: {v.Codec}";
-        }
-
-        if (a?.Codec != null)
-        {
-            codecLine += (codecLine.Length > 0 ? "   " : string.Empty) + $"Audio: {a.Codec}" +
-                (a.SampleRate is { } sr ? $" {sr} Hz" : string.Empty) +
-                (a.Channels > 0 ? $" {a.Channels}ch" : string.Empty);
-        }
-
-        if (codecLine.Length > 0)
-        {
-            lines.Add(codecLine);
-        }
-
-        return lines.ToArray();
-    }
-
-    private static string FormatDuration(TimeSpan d)
-        => d.TotalHours >= 1
-            ? $"{(int)d.TotalHours}:{d.Minutes:D2}:{d.Seconds:D2}"
-            : $"{d.Minutes:D2}:{d.Seconds:D2}";
-
-    private static string FormatBytes(long bytes)
-    {
-        string[] units = { "B", "KB", "MB", "GB", "TB" };
-        double size = bytes;
-        int u = 0;
-        while (size >= 1024 && u < units.Length - 1)
-        {
-            size /= 1024;
-            u++;
-        }
-
-        return $"{size:0.##} {units[u]}";
     }
 }

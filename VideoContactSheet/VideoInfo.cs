@@ -30,6 +30,8 @@ public sealed class VideoStream
 
     public string? Codec { get; init; }
 
+    public string? Profile { get; init; }
+
     public int Width { get; init; }
 
     public int Height { get; init; }

@@ -52,14 +52,28 @@ To add Linux/macOS support: download the respective platform builds, put them in
 
 ## Known SkiaSharp API quirk
 
-`SKFont.MeasureText(string)` is not available in SkiaSharp 2.88.x when targeting .NET 10 — only the `ReadOnlySpan<ushort>` overload is exposed. The workaround is in `ContactSheet.cs`:
+In SkiaSharp 2.88.x on .NET 10, the string/char-span/encoding overloads of `SKFont.MeasureText`
+and `SKFont.GetGlyphs` are not exposed — only the glyph-ID (`ReadOnlySpan<ushort>`) and
+codepoint (`ReadOnlySpan<int>`) ones are. So to measure text width you must first map the text
+to **real glyph IDs** via its Unicode codepoints, then measure those. The helper in
+`ContactSheet.cs`:
 
 ```csharp
 private static float MeasureTextWidth(SKFont font, string text)
-    => font.MeasureText(MemoryMarshal.Cast<char, ushort>(text.AsSpan()));
+{
+    // ... build int[] codepoints from text (surrogate-aware) ...
+    var glyphs = new ushort[codepoints.Count];
+    font.GetGlyphs(codepoints.ToArray(), glyphs);   // (ReadOnlySpan<int>, Span<ushort>)
+    return font.MeasureText(glyphs);                // (ReadOnlySpan<ushort>)
+}
 ```
 
 All `font.MeasureText(...)` calls in `ContactSheet.cs` use this helper.
+
+> ⚠️ Do **not** `MemoryMarshal.Cast<char, ushort>` the string and pass it to `MeasureText`:
+> that overload treats the values as glyph IDs, but char codes are not glyph IDs, so it
+> measures unrelated glyphs. The measured width then disagrees with what `DrawText` renders,
+> which makes right-aligned text ragged. `HeaderAlignmentTests` guards against this regressing.
 
 ## Package management
 

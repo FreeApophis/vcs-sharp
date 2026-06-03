@@ -36,6 +36,7 @@ public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
             {
                 Index = s.Index,
                 Codec = s.CodecName,
+                Profile = s.Profile,
                 Width = s.Width,
                 Height = s.Height,
                 PixelFormat = s.PixelFormat,

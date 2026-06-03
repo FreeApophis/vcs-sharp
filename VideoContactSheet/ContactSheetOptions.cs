@@ -56,7 +56,7 @@ public sealed class ContactSheetOptions
     public IReadOnlyList<int> BlankAlternatives { get; set; } = new[] { -5, 5, -10, 10, -30, 30, 0 };
 
     // ---- Colors ----
-    public SKColor SheetBackground { get; set; } = new(0x70, 0x80, 0x90);
+    public SKColor SheetBackground { get; set; } = SKColors.White;
 
     public SKColor HighlightBackground { get; set; } = new(0x70, 0x80, 0x90);
 

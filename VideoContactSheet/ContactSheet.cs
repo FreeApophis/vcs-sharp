@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using SkiaSharp;
 
 namespace VideoContactSheet;
@@ -12,8 +11,8 @@ public sealed class ContactSheet
 
     public sealed record Thumbnail(SKBitmap Image, TimeIndex Time, bool IsHighlight = false);
 
-    /// <summary>Optional metadata lines injected by the orchestrator (filename, size, codecs...).</summary>
-    public string[]? HeaderLinesOverride { get; set; }
+    /// <summary>Optional two-column metadata header injected by the orchestrator.</summary>
+    public HeaderColumns? HeaderOverride { get; set; }
 
     /// <summary>
     /// Compose the supplied thumbnails into a single sheet image and return the encoded bytes.
@@ -51,10 +50,11 @@ public sealed class ContactSheet
         using var headerFont = CreateFont(o.HeaderStyle);
         using var sigFont = CreateFont(o.SignatureStyle);
 
-        var headerLines = o.ShowHeader ? BuildHeaderLines() : [];
+        var header = o.ShowHeader ? (HeaderOverride ?? HeaderColumns.Empty) : HeaderColumns.Empty;
+        int headerRows = Math.Max(header.Left.Count, header.Right.Count);
         float titleH = !string.IsNullOrEmpty(title) ? LineHeight(titleFont) + (2 * padding) + 8 : 0;
-        float headerH = headerLines.Length > 0
-            ? (headerLines.Length * LineHeight(headerFont)) + (2 * padding) + 8
+        float headerH = headerRows > 0
+            ? (headerRows * LineHeight(headerFont)) + (2 * padding) + 8
             : 0;
         float sigH = (o.ShowSignature && !string.IsNullOrEmpty(o.Signature))
             ? LineHeight(sigFont) + (2 * padding) + 6
@@ -67,7 +67,8 @@ public sealed class ContactSheet
 
         float totalH = titleH + headerH + highlightBandH + gridH + sigH;
 
-        var imageInfo = new SKImageInfo(width, (int)Math.Ceiling(totalH));
+        int imageHeight = (int)Math.Ceiling(totalH);
+        var imageInfo = new SKImageInfo(width, imageHeight);
         using var surface = SKSurface.Create(imageInfo);
         var canvas = surface.Canvas;
         canvas.Clear(o.SheetBackground);
@@ -82,14 +83,23 @@ public sealed class ContactSheet
             y += titleH;
         }
 
-        // Header band (metadata).
+        // Header band (metadata) — left column left-aligned, right column right-aligned.
         if (headerH > 0)
         {
             DrawBand(canvas, new SKRect(0, y, width, y + headerH), o.HeaderStyle.Background);
             float ly = y + padding + (LineHeight(headerFont) * 0.8f);
-            foreach (var line in headerLines)
+            for (int row = 0; row < headerRows; row++)
             {
-                DrawTextLeft(canvas, line, headerFont, o.HeaderStyle.Color, padding + 4, ly);
+                if (row < header.Left.Count)
+                {
+                    DrawTextLeft(canvas, header.Left[row], headerFont, o.HeaderStyle.Color, padding + 4, ly);
+                }
+
+                if (row < header.Right.Count)
+                {
+                    DrawTextRightAt(canvas, header.Right[row], headerFont, o.HeaderStyle.Color, width - padding - 4, ly);
+                }
+
                 ly += LineHeight(headerFont);
             }
 
@@ -134,8 +144,9 @@ public sealed class ContactSheet
         // Signature footer.
         if (sigH > 0)
         {
+            // Extend to the ceil-rounded image bottom so no background sliver shows below the band.
             float fy = totalH - sigH;
-            DrawBand(canvas, new SKRect(0, fy, width, totalH), o.SignatureStyle.Background);
+            DrawBand(canvas, new SKRect(0, fy, width, imageHeight), o.SignatureStyle.Background);
             DrawTextRight(
                 canvas,
                 o.Signature!,
@@ -245,11 +256,6 @@ public sealed class ContactSheet
         canvas.DrawText(text, bx + boxPad, baseline, font, fill);
     }
 
-    private string[] BuildHeaderLines()
-    {
-        return HeaderLinesOverride ?? [];
-    }
-
     // Skia helpers.
     private static SKFont CreateFont(TextStyle style)
     {
@@ -329,8 +335,50 @@ public sealed class ContactSheet
         canvas.DrawText(text, right - w, baseline, font, paint);
     }
 
+    /// <summary>Right-aligns text against <paramref name="right"/> at an explicit baseline.</summary>
+    private static void DrawTextRightAt(
+        SKCanvas canvas,
+        string text,
+        SKFont font,
+        SKColor color,
+        float right,
+        float baseline)
+    {
+        using var paint = new SKPaint { Color = color, IsAntialias = true };
+        float w = MeasureTextWidth(font, text);
+        canvas.DrawText(text, right - w, baseline, font, paint);
+    }
+
+    // SkiaSharp 2.88.x on .NET 10 only exposes the glyph-ID overloads of SKFont.MeasureText /
+    // GetGlyphs (no string/char-span/encoding ones). Map the text to real glyph IDs via its
+    // Unicode codepoints — the same glyphs DrawText renders — so the measured width matches what
+    // is drawn. Casting chars straight to ushort (as before) measures unrelated glyphs, which
+    // made right-aligned text ragged.
     private static float MeasureTextWidth(SKFont font, string text)
-        => font.MeasureText(MemoryMarshal.Cast<char, ushort>(text.AsSpan()));
+    {
+        if (text.Length == 0)
+        {
+            return 0;
+        }
+
+        var codepoints = new List<int>(text.Length);
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                codepoints.Add(char.ConvertToUtf32(text[i], text[i + 1]));
+                i++;
+            }
+            else
+            {
+                codepoints.Add(text[i]);
+            }
+        }
+
+        var glyphs = new ushort[codepoints.Count];
+        font.GetGlyphs(codepoints.ToArray(), glyphs);
+        return font.MeasureText(glyphs);
+    }
 
     private static SKEncodedImageFormat EncodeFormat(SheetFormat format) => format switch
     {

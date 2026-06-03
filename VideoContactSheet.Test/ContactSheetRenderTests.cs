@@ -43,6 +43,28 @@ public class ContactSheetRenderTests
         }
     }
 
+    [Fact]
+    public void Render_WithSignature_FooterBandReachesBottomEdge()
+    {
+        var options = TextFreeOptions();
+        options.ShowSignature = true; // footer slate band must reach the ceil-rounded bottom row
+        var thumbnails = TestFrames.Grid(8);
+
+        try
+        {
+            var bytes = new ContactSheet(options).Render(thumbnails);
+            using var decoded = SKBitmap.Decode(bytes);
+
+            // Bottom-left carries no text, so it must be the footer background, not a white sliver.
+            Assert.NotEqual(options.SheetBackground, options.SignatureStyle.Background);
+            Assert.Equal(options.SignatureStyle.Background, decoded.GetPixel(0, decoded.Height - 1));
+        }
+        finally
+        {
+            TestFrames.DisposeAll(thumbnails);
+        }
+    }
+
     // Text-free so the snapshot is portable: no fonts (the one cross-machine variable) participate.
     private static ContactSheetOptions TextFreeOptions() => new()
     {
