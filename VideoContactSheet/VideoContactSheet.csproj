@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>VideoContactSheet</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Video Contact Sheet generator for .NET. Extracts frames from a video and composes them into a grid (contact sheet) with header, title, timestamps, shadows and polaroid frames. Uses ffmpeg/ffprobe for capture and SkiaSharp for composition.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+  </ItemGroup>
+
+</Project>

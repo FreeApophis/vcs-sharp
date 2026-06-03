@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.6.11822.322
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoContactSheet.Cli", "VideoContactSheet.Cli\VideoContactSheet.Cli.csproj", "{8DEAE68D-D980-339A-4E8D-BA31A3D5E54F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoContactSheet", "VideoContactSheet\VideoContactSheet.csproj", "{B6534926-02CA-BE3B-ED33-33D2222F34DC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build Configuration", "Build Configuration", "{B1ADC291-C6C1-4B3B-9E0E-3E069AB47956}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+		global.json = global.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4E6567D5-94D0-486D-829E-6E8CA1DDB6D6}"
+	ProjectSection(SolutionItems) = preProject
+		CLAUDE.md = CLAUDE.md
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoContactSheet.Test", "VideoContactSheet.Test\VideoContactSheet.Test.csproj", "{3F4F15F5-9E9C-41B9-A9B1-E66169F88488}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8DEAE68D-D980-339A-4E8D-BA31A3D5E54F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DEAE68D-D980-339A-4E8D-BA31A3D5E54F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DEAE68D-D980-339A-4E8D-BA31A3D5E54F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DEAE68D-D980-339A-4E8D-BA31A3D5E54F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6534926-02CA-BE3B-ED33-33D2222F34DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6534926-02CA-BE3B-ED33-33D2222F34DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6534926-02CA-BE3B-ED33-33D2222F34DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6534926-02CA-BE3B-ED33-33D2222F34DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F4F15F5-9E9C-41B9-A9B1-E66169F88488}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F4F15F5-9E9C-41B9-A9B1-E66169F88488}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F4F15F5-9E9C-41B9-A9B1-E66169F88488}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F4F15F5-9E9C-41B9-A9B1-E66169F88488}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DB204D29-7C06-4A5B-8F55-275DD487E75F}
+	EndGlobalSection
+EndGlobal

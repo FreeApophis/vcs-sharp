@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>vcs</AssemblyName>
+    <RootNamespace>VideoContactSheet.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VideoContactSheet\VideoContactSheet.csproj" />
+  </ItemGroup>
+
+</Project>

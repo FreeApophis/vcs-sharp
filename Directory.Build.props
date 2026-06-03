@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <FunckyImplicitUsings>enable</FunckyImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NoWarn>SA1201</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--<PackageReference Include="Polyadic.CodeStyle" PrivateAssets="all" />-->
+  </ItemGroup>
+  <PropertyGroup>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+  </PropertyGroup>
+</Project>
