@@ -25,18 +25,30 @@ Key source files in the library:
 - `Video.cs` — top-level orchestrator: probe → compute times → capture → compose
 - `ContactSheet.cs` — SkiaSharp grid layout and rendering
 - `ContactSheetOptions.cs` — all grid/style settings (`Columns`, `Rows`, `Interval`, `Polaroid`, `SoftShadow`, …)
-- `FfmpegCapturer.cs` — frame extraction via ffmpeg; also `IFrameCapturer` interface and `FrameAnalysis`
-- `FfprobeVideoInfoProvider.cs` — probes video metadata via ffprobe JSON output → `VideoInfo`
+- `FfmpegCapturer.cs` — `IFrameCapturer` interface, `FfmpegCapturer` (FFMpegCore pipe → PNG → SKBitmap), `FrameAnalysis`
+- `FfprobeVideoInfoProvider.cs` — `FFProbe.AnalyseAsync` → `VideoInfo`
 - `TimeIndex.cs` — flexible time parser ("3m30", "1:22", "90", "1h2m3s")
-- `ProcessRunner.cs` — async process wrapper; also `ToolNotFoundException` / `CaptureException`
+- `ProcessRunner.cs` — public exception types only: `ToolNotFoundException`, `CaptureException`
 
 ## Target framework
 
 `Directory.Build.props` sets `TargetFramework` to `net10.0` for all projects.
 
-## Runtime dependencies
+## Runtime dependencies / bundled ffmpeg
 
-`ffmpeg` and `ffprobe` must be on `PATH` at runtime. The library accepts custom paths via constructors if they are not on PATH.
+`ffmpeg 8.1.1` binaries (Windows x64) live in `tools/ffmpeg/win-x64/` and are copied to the CLI build output by `VideoContactSheet.Cli.csproj` via a Windows-conditional `<Content>` rule. The CLI auto-detects them on startup, so no global PATH install is needed.
+
+The binaries are git-ignored (~97 MB each). Other developers or CI reproduce them with:
+```
+pwsh tools/download-ffmpeg.ps1
+```
+
+To use bundled binaries from the library:
+```csharp
+var video = new Video("movie.mkv", ffBinaryFolder: AppContext.BaseDirectory);
+```
+
+To add Linux/macOS support: download the respective platform builds, put them in `tools/ffmpeg/linux-x64/` (etc.), and add matching `<Content>` blocks with an `IsOSPlatform('Linux')` condition in the CLI `.csproj`.
 
 ## Known SkiaSharp API quirk
 
@@ -52,6 +64,8 @@ All `font.MeasureText(...)` calls in `ContactSheet.cs` use this helper.
 ## Package management
 
 Uses Central Package Management (`Directory.Packages.props`). Add new packages there with `<PackageVersion>` before referencing them in individual projects.
+
+Key library dependencies: `FFMpegCore 5.4.0`, `SkiaSharp 2.88.8`.
 
 ## CLI options
 
@@ -71,6 +85,7 @@ vcs [options] <video> [<video> ...]
       --[no-]timestamp  (default on)
       --[no-]polaroid   (default off)
       --[no-]shadow     (default on)
+      --ffmpeg-folder  Folder containing ffmpeg/ffprobe binaries
   -q, --quiet
       --continue  Keep going on per-file errors
 ```

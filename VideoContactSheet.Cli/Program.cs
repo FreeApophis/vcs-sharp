@@ -23,6 +23,7 @@ internal static class Program
         var options = new ContactSheetOptions();
         var inputs = new List<string>();
         var outputs = new List<string>();
+        string? ffBinaryFolder = null;
         bool quiet = false;
         bool keepGoing = false;
 
@@ -53,6 +54,7 @@ internal static class Program
                     case "--no-polaroid": options.Polaroid = false; break;
                     case "--shadow": options.SoftShadow = true; break;
                     case "--no-shadow": options.SoftShadow = false; break;
+                    case "--ffmpeg-folder": ffBinaryFolder = Next(); break;
                     case "-q" or "--quiet": quiet = true; break;
                     case "--continue": keepGoing = true; break;
                     default:
@@ -74,6 +76,9 @@ internal static class Program
             return 1;
         }
 
+        // Auto-detect bundled binaries next to the executable (takes precedence over PATH).
+        ffBinaryFolder ??= DetectBundledBinaries();
+
         int exit = 0;
         for (int idx = 0; idx < inputs.Count; idx++)
         {
@@ -85,7 +90,7 @@ internal static class Program
             try
             {
                 if (!quiet) Console.WriteLine($"Processing: {input} -> {output}");
-                var video = new Video(input);
+                var video = new Video(input, ffBinaryFolder: ffBinaryFolder);
                 if (!await video.IsValidAsync())
                     throw new CaptureException("Not a valid video or no video stream.");
 
@@ -104,6 +109,13 @@ internal static class Program
         }
 
         return exit;
+    }
+
+    private static string? DetectBundledBinaries()
+    {
+        var dir = AppContext.BaseDirectory;
+        var name = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
+        return File.Exists(Path.Combine(dir, name)) ? dir : null;
     }
 
     private static SheetFormat ParseFormat(string s) => s.ToLowerInvariant() switch
@@ -143,6 +155,7 @@ internal static class Program
                     --[no-]timestamp        Timestamp overlay (default on)
                     --[no-]polaroid         Polaroid frame (default off)
                     --[no-]shadow           Drop shadow (default on)
+                    --ffmpeg-folder [DIR]    Folder containing ffmpeg/ffprobe binaries
                 -q, --quiet                 Only print errors
                     --continue              Continue with next file on error
                 -v, --version               Print version

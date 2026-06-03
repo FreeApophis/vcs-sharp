@@ -17,11 +17,11 @@ public sealed class Video
 
     public string Path { get; }
 
-    public Video(string path, IFrameCapturer? capturer = null, FfprobeVideoInfoProvider? probe = null)
+    public Video(string path, IFrameCapturer? capturer = null, FfprobeVideoInfoProvider? probe = null, string? ffBinaryFolder = null)
     {
         Path = path ?? throw new ArgumentNullException(nameof(path));
-        _capturer = capturer ?? new FfmpegCapturer();
-        _probe = probe ?? new FfprobeVideoInfoProvider();
+        _capturer = capturer ?? new FfmpegCapturer(ffBinaryFolder);
+        _probe = probe ?? new FfprobeVideoInfoProvider(ffBinaryFolder);
     }
 
     /// <summary>Probe and cache the video's metadata.</summary>

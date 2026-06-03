@@ -5,15 +5,16 @@ It extracts frames from a video at regular intervals and composes them into a gr
 with a metadata header, optional title, per-thumbnail timestamps, drop shadows, polaroid frames,
 and a signature footer.
 
-- **Frame capture & metadata**: `ffmpeg` / `ffprobe` (must be installed and on `PATH`)
+- **Frame capture & metadata**: [FFMpegCore](https://github.com/rosenbjerg/FFMpegCore) — wraps
+  `ffmpeg` / `ffprobe`; binaries can be on `PATH` or pointed to via `ffBinaryFolder`
 - **Composition / drawing**: [SkiaSharp](https://github.com/mono/SkiaSharp) (MIT) — chosen for its
   native drop-shadow, text, and canvas compositing support
-- **Targets**: .NET 8, cross-platform (Windows / Linux / macOS)
+- **Targets**: .NET 10, cross-platform (Windows / Linux / macOS)
 
 ## Requirements
 
-- .NET 8 SDK
-- `ffmpeg` and `ffprobe` available on the system `PATH`
+- .NET 10 SDK
+- `ffmpeg` and `ffprobe` binaries — the CLI project bundles Windows x64 binaries in its build output automatically (run `tools/download-ffmpeg.ps1` first if they are missing). Alternatively supply `ffBinaryFolder` or put them on `PATH`.
 - On headless Linux, you may also need `libfontconfig1` for text rendering
 
 ## Library usage
@@ -21,7 +22,11 @@ and a signature footer.
 ```csharp
 using VideoContactSheet;
 
+// ffmpeg/ffprobe on PATH:
 var video = new Video("movie.mkv");
+
+// — or — binaries shipped next to the exe:
+var video = new Video("movie.mkv", ffBinaryFolder: AppContext.BaseDirectory);
 
 // Metadata
 var info = await video.GetInfoAsync();
@@ -55,7 +60,7 @@ vcs --from 3m --to 18m -i 2m input.avi
 vcs -c 4 -r 5 --polaroid --no-shadow -T "Holiday" clip.mp4
 ```
 
-Run `vcs --help` for the full list.
+Run `vcs --help` for the full list. Use `--ffmpeg-folder <dir>` to point at a local copy of the binaries instead of relying on `PATH`.
 
 ## Feature mapping vs. vcs.rb
 
@@ -74,16 +79,16 @@ Run `vcs --help` for the full list.
 | Blank-frame evasion       |   ✅   | `BlankEvasion`, `BlankThreshold`, alternatives   |
 | Single-frame capture      |   ✅   | `CaptureFrameAsync`                              |
 | Video metadata (streams)  |   ✅   | `GetInfoAsync` → `VideoInfo`                      |
-| Capturer: ffmpeg          |   ✅   | `FfmpegCapturer` (implement `IFrameCapturer` for libav/mplayer) |
+| Capturer: ffmpeg          |   ✅   | `FfmpegCapturer` via FFMpegCore (implement `IFrameCapturer` for libav/mplayer) |
 | YAML profiles             |   ⬜   | configure via `ContactSheetOptions` in code instead |
 
 ## Architecture
 
 ```
 Video                     orchestrator (probe → capture → compose)
- ├─ FfprobeVideoInfoProvider   ffprobe JSON → VideoInfo
+ ├─ FfprobeVideoInfoProvider   FFProbe.AnalyseAsync → VideoInfo
  ├─ IFrameCapturer             frame extraction abstraction
- │   └─ FfmpegCapturer         ffmpeg → PNG → SKBitmap
+ │   └─ FfmpegCapturer         FFMpegCore pipe → PNG → SKBitmap
  ├─ TimeIndex                  flexible time parsing ("3m30", "1:22", "90")
  └─ ContactSheet               SkiaSharp grid composition + styling
      └─ ContactSheetOptions    all grid/style/filter settings

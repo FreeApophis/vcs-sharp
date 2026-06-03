@@ -22,3 +22,7 @@ build/
 **/packages/*
 # except build/, which is used as an MSBuild target.
 !**/packages/build/
+
+# ffmpeg/ffprobe binaries (~200 MB each platform) — not committed to git.
+# Run tools/download-ffmpeg.ps1 to populate tools/ffmpeg/ locally.
+tools/ffmpeg/

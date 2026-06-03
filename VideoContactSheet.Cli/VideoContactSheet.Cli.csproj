@@ -10,4 +10,16 @@
     <ProjectReference Include="..\VideoContactSheet\VideoContactSheet.csproj" />
   </ItemGroup>
 
+  <!-- Copy platform-specific ffmpeg binaries into the build output so the CLI works without a global install. -->
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <Content Include="$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffmpeg.exe</Link>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\ffprobe.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>ffprobe.exe</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>

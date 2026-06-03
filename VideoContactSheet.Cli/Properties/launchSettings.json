@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "VideoContactSheet.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\Apophis\\Videos\\ons3on3cup_hdtv.mp4\""
+    }
+  }
+}

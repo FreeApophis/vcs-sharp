@@ -1,3 +1,5 @@
+using FFMpegCore;
+using FFMpegCore.Pipes;
 using SkiaSharp;
 
 namespace VideoContactSheet;
@@ -8,64 +10,49 @@ public interface IFrameCapturer
     Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, CancellationToken ct = default);
 }
 
-/// <summary>Frame capturer backed by ffmpeg. Renders one frame to PNG on stdout and decodes it.</summary>
+/// <summary>Frame capturer backed by FFMpegCore. Pipes one PNG frame to memory and decodes it with SkiaSharp.</summary>
 public sealed class FfmpegCapturer : IFrameCapturer
 {
-    private readonly string _ffmpegPath;
+    private readonly FFOptions? _ffOptions;
 
-    public FfmpegCapturer(string ffmpegPath = "ffmpeg") => _ffmpegPath = ffmpegPath;
+    public FfmpegCapturer(string? binaryFolder = null)
+        => _ffOptions = binaryFolder is not null ? new FFOptions { BinaryFolder = binaryFolder } : null;
 
     public async Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, CancellationToken ct = default)
     {
-        // -ss before -i is fast (keyframe) seeking, accurate enough for thumbnails.
-        var args = new List<string>
+        using var ms = new MemoryStream();
+
+        var processor = FFMpegArguments
+            .FromFileInput(videoPath, false, input => input.Seek(time.Value))
+            .OutputToPipe(new StreamPipeSink(ms), output =>
+            {
+                if (width > 0)
+                    output.WithCustomArgument($"-vf scale={width}:-1");
+                output.WithVideoCodec("png")
+                      .WithFrameOutputCount(1)
+                      .ForceFormat("image2pipe");
+            });
+
+        try
         {
-            "-y",
-            "-ss", time.TotalSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture),
-            "-i", videoPath,
-            "-frames:v", "1",
-        };
-        if (width > 0)
-            args.AddRange(new[] { "-vf", $"scale={width}:-1" });
-        args.AddRange(new[] { "-f", "image2pipe", "-vcodec", "png", "pipe:1" });
-
-        var bytes = await RunCaptureAsync(args, ct).ConfigureAwait(false);
-        var bitmap = SKBitmap.Decode(bytes)
-            ?? throw new CaptureException($"Failed to decode frame at {time}.");
-        return bitmap;
-    }
-
-    private async Task<byte[]> RunCaptureAsync(IEnumerable<string> args, CancellationToken ct)
-    {
-        var psi = new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = _ffmpegPath,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        foreach (var a in args) psi.ArgumentList.Add(a);
-
-        using var process = new System.Diagnostics.Process { StartInfo = psi };
-        try { process.Start(); }
+            await (
+                _ffOptions is not null
+                    ? processor.ProcessAsynchronously(true, _ffOptions)
+                    : processor.ProcessAsynchronously()
+            ).WaitAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
-            throw new ToolNotFoundException(
-                $"Could not start '{_ffmpegPath}'. Make sure ffmpeg is installed and on PATH.", ex);
+            throw new CaptureException($"ffmpeg capture failed at {time}: {ex.Message}", ex);
         }
 
-        using var ms = new MemoryStream();
-        var copyTask = process.StandardOutput.BaseStream.CopyToAsync(ms, ct);
-        var errTask = process.StandardError.ReadToEndAsync(ct);
+        if (ms.Length == 0)
+            throw new CaptureException($"ffmpeg returned no data for frame at {time}.");
 
-        await Task.WhenAll(copyTask, process.WaitForExitAsync(ct)).ConfigureAwait(false);
-        var err = await errTask.ConfigureAwait(false);
-
-        if (process.ExitCode != 0 || ms.Length == 0)
-            throw new CaptureException($"ffmpeg capture failed (exit {process.ExitCode}): {err}");
-
-        return ms.ToArray();
+        ms.Position = 0;
+        return SKBitmap.Decode(ms)
+            ?? throw new CaptureException($"Failed to decode captured frame at {time}.");
     }
 }
 
