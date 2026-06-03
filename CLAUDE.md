@@ -67,25 +67,16 @@ Uses Central Package Management (`Directory.Packages.props`). Add new packages t
 
 Key library dependencies: `FFMpegCore 5.4.0`, `SkiaSharp 2.88.8`.
 
-## CLI options
+## CLI
 
-```
-vcs [options] <video> [<video> ...]
+The CLI uses **System.CommandLine 2.0.8**. Run `vcs --help` for the full option list.
 
-  -i, --interval  Capture interval (e.g. 3m30, 90, 1:22)
-  -c, --columns   Grid columns (default 4)
-  -r, --rows      Grid rows (default 4)
-  -W, --width     Thumbnail width px (default 320)
-      --from      Start time
-  -t, --to        End time
-  -f, --format    png | jpg | webp
-  -T, --title     Sheet title
-  -o, --output    Output file
-  -l, --highlight Extra highlight frame at TIME (repeatable)
-      --[no-]timestamp  (default on)
-      --[no-]polaroid   (default off)
-      --[no-]shadow     (default on)
-      --ffmpeg-folder  Folder containing ffmpeg/ffprobe binaries
-  -q, --quiet
-      --continue  Keep going on per-file errors
-```
+Key patterns used in `Program.cs`:
+- `new Option<T>(name, alias)` — primary name + alias in one constructor call
+- `option.AcceptOnlyFromAmong(...)` — built-in value validation (used for `--format`)
+- `option.CustomParser = result => { ... }` — for `TimeIndex?` parsing
+- `rootCommand.SetAction(async (parseResult, ct) => { return exitCode; })` — typed async handler
+- `parseResult.GetValue(option)` — uniform retrieval for both Options and Arguments
+- `rootCommand.Parse(args).InvokeAsync()` — entry point; Ctrl+C is wired automatically
+
+`RootCommand` automatically adds `--version` (reads from the assembly) and `--help`; do not add a `VersionOption` manually.

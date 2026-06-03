@@ -1,170 +1,248 @@
-using VideoContactSheet;
+using System.CommandLine;
 
 namespace VideoContactSheet.Cli;
 
 internal static class Program
 {
-    private const string Version = "1.0.0";
-
     private static async Task<int> Main(string[] args)
     {
-        if (args.Length == 0 || args.Contains("-h") || args.Contains("--help"))
+        // ── Positional argument ──────────────────────────────────────────────────────
+        var filesArg = new Argument<string[]>("files")
         {
-            PrintHelp();
-            return args.Length == 0 ? 1 : 0;
-        }
+            Description = "One or more video files to process.",
+            Arity = ArgumentArity.OneOrMore,
+        };
 
-        if (args.Contains("-v") || args.Contains("--version"))
+        // ── Grid options ─────────────────────────────────────────────────────────────
+        var columnsOpt = new Option<int>("--columns", "-c")
         {
-            Console.WriteLine($"Video Contact Sheet .NET {Version}");
-            return 0;
-        }
-
-        var options = new ContactSheetOptions();
-        var inputs = new List<string>();
-        var outputs = new List<string>();
-        string? ffBinaryFolder = null;
-        bool quiet = false;
-        bool keepGoing = false;
-
-        try
+            Description = "Grid columns.",
+            DefaultValueFactory = _ => 4,
+        };
+        var rowsOpt = new Option<int>("--rows", "-r")
         {
-            for (int i = 0; i < args.Length; i++)
+            Description = "Grid rows.",
+            DefaultValueFactory = _ => 4,
+        };
+        var widthOpt = new Option<int>("--width", "-W")
+        {
+            Description = "Thumbnail width in pixels.",
+            DefaultValueFactory = _ => 320,
+        };
+
+        // ── Time options ─────────────────────────────────────────────────────────────
+        var intervalOpt = TimeIndexOption("--interval", "-i", "Capture interval (e.g. 3m30, 90, 1:22).");
+        var fromOpt     = TimeIndexOption("--from",          "Start time.");
+        var toOpt       = TimeIndexOption("--to",      "-t", "End time.");
+
+        // ── Output options ───────────────────────────────────────────────────────────
+        var outputOpt = new Option<string[]>("--output", "-o")
+        {
+            Description = "Output file (repeatable, paired with inputs).",
+            Arity = ArgumentArity.ZeroOrMore,
+        };
+
+        var formatOpt = new Option<string>("--format", "-f")
+        {
+            Description = "Output format: png, jpg, jpeg, webp.",
+            DefaultValueFactory = _ => "png",
+        };
+        formatOpt.AcceptOnlyFromAmong("png", "jpg", "jpeg", "webp");
+
+        // ── Text / metadata options ──────────────────────────────────────────────────
+        var titleOpt = new Option<string?>("--title", "-T")
+        {
+            Description = "Sheet title.",
+        };
+        var signatureOpt = new Option<string?>("--signature", "-s")
+        {
+            Description = "Footer signature text.",
+        };
+        var noSignatureOpt = new Option<bool>("--no-signature")
+        {
+            Description = "Remove footer signature.",
+        };
+
+        // ── Highlight frames ─────────────────────────────────────────────────────────
+        var highlightOpt = new Option<string[]>("--highlight", "-l")
+        {
+            Description = "Add a highlight frame at TIME (repeatable).",
+            Arity = ArgumentArity.ZeroOrMore,
+        };
+
+        // ── Style toggles ────────────────────────────────────────────────────────────
+        var timestampOpt   = new Option<bool>("--timestamp")    { Description = "Enable timestamp overlay (default: on)." };
+        var noTimestampOpt = new Option<bool>("--no-timestamp")  { Description = "Disable timestamp overlay." };
+        var polaroidOpt    = new Option<bool>("--polaroid")      { Description = "Enable polaroid frame (default: off)." };
+        var noPolaroidOpt  = new Option<bool>("--no-polaroid")   { Description = "Disable polaroid frame." };
+        var shadowOpt      = new Option<bool>("--shadow")        { Description = "Enable drop shadow (default: on)." };
+        var noShadowOpt    = new Option<bool>("--no-shadow")     { Description = "Disable drop shadow." };
+
+        // ── Tool / runtime options ───────────────────────────────────────────────────
+        var ffmpegFolderOpt = new Option<string?>("--ffmpeg-folder")
+        {
+            Description = "Folder containing ffmpeg/ffprobe binaries (default: bundled or PATH).",
+        };
+        var quietOpt          = new Option<bool>("--quiet",    "-q") { Description = "Only print errors." };
+        var continueOpt       = new Option<bool>("--continue")        { Description = "Continue with next file on error." };
+
+        // ── Root command ─────────────────────────────────────────────────────────────
+        var rootCommand = new RootCommand("Video Contact Sheet — generates frame-grid images from video files.")
+        {
+            filesArg,
+            columnsOpt, rowsOpt, widthOpt,
+            intervalOpt, fromOpt, toOpt,
+            outputOpt, formatOpt,
+            titleOpt, signatureOpt, noSignatureOpt,
+            highlightOpt,
+            timestampOpt, noTimestampOpt,
+            polaroidOpt, noPolaroidOpt,
+            shadowOpt, noShadowOpt,
+            ffmpegFolderOpt, quietOpt, continueOpt,
+        };
+
+        rootCommand.SetAction(async (parseResult, ct) =>
+        {
+            var files         = parseResult.GetValue(filesArg)!;
+            var outputs       = parseResult.GetValue(outputOpt)     ?? [];
+            var interval      = parseResult.GetValue(intervalOpt);
+            var from          = parseResult.GetValue(fromOpt);
+            var to            = parseResult.GetValue(toOpt);
+            var columns       = parseResult.GetValue(columnsOpt);
+            var rows          = parseResult.GetValue(rowsOpt);
+            var width         = parseResult.GetValue(widthOpt);
+            var format        = parseResult.GetValue(formatOpt)!;
+            var title         = parseResult.GetValue(titleOpt);
+            var signature     = parseResult.GetValue(signatureOpt);
+            var noSignature   = parseResult.GetValue(noSignatureOpt);
+            var highlightStrs = parseResult.GetValue(highlightOpt)  ?? [];
+            var useTimestamp  = parseResult.GetValue(timestampOpt);
+            var noTimestamp   = parseResult.GetValue(noTimestampOpt);
+            var usePolaroid   = parseResult.GetValue(polaroidOpt);
+            var noPolaroid    = parseResult.GetValue(noPolaroidOpt);
+            var useShadow     = parseResult.GetValue(shadowOpt);
+            var noShadow      = parseResult.GetValue(noShadowOpt);
+            var ffmpegFolder  = parseResult.GetValue(ffmpegFolderOpt) ?? DetectBundledBinaries();
+            var quiet         = parseResult.GetValue(quietOpt);
+            var continueOnErr = parseResult.GetValue(continueOpt);
+
+            // Parse highlight times
+            var highlights = new List<TimeIndex>();
+            foreach (var h in highlightStrs)
             {
-                string a = args[i];
-                string Next() => ++i < args.Length ? args[i] : throw new ArgumentException($"Missing value for {a}");
-
-                switch (a)
+                if (!TimeIndex.TryParse(h, out var ti))
                 {
-                    case "-i" or "--interval": options.Interval = TimeIndex.Parse(Next()); break;
-                    case "-c" or "--columns": options.Columns = int.Parse(Next()); break;
-                    case "-r" or "--rows": options.Rows = int.Parse(Next()); break;
-                    case "-W" or "--width": options.ThumbnailWidth = int.Parse(Next()); break;
-                    case "--from": options.From = TimeIndex.Parse(Next()); break;
-                    case "-t" or "--to": options.To = TimeIndex.Parse(Next()); break;
-                    case "-f" or "--format": options.Format = ParseFormat(Next()); break;
-                    case "-T" or "--title": options.Title = Next(); break;
-                    case "-o" or "--output": outputs.Add(Next()); break;
-                    case "-s" or "--signature": options.Signature = Next(); break;
-                    case "--no-signature": options.ShowSignature = false; break;
-                    case "-l" or "--highlight": options.Highlights.Add(TimeIndex.Parse(Next())); break;
-                    case "--timestamp": options.Timestamp = true; break;
-                    case "--no-timestamp": options.Timestamp = false; break;
-                    case "--polaroid": options.Polaroid = true; break;
-                    case "--no-polaroid": options.Polaroid = false; break;
-                    case "--shadow": options.SoftShadow = true; break;
-                    case "--no-shadow": options.SoftShadow = false; break;
-                    case "--ffmpeg-folder": ffBinaryFolder = Next(); break;
-                    case "-q" or "--quiet": quiet = true; break;
-                    case "--continue": keepGoing = true; break;
-                    default:
-                        if (a.StartsWith('-')) throw new ArgumentException($"Unknown option: {a}");
-                        inputs.Add(a);
-                        break;
+                    Console.Error.WriteLine($"Invalid highlight time: '{h}'");
+                    return 1;
+                }
+                highlights.Add(ti);
+            }
+
+            // Build ContactSheetOptions — start from defaults and apply only what was set
+            var options = new ContactSheetOptions
+            {
+                Columns        = columns,
+                Rows           = rows,
+                ThumbnailWidth = width,
+                Format         = ParseFormat(format),
+            };
+            if (interval.HasValue)  options.Interval  = interval;
+            if (from.HasValue)      options.From      = from;
+            if (to.HasValue)        options.To        = to;
+            if (title is not null)  options.Title     = title;
+            if (signature is not null) options.Signature = signature;
+            if (noSignature)        options.ShowSignature = false;
+
+            if (noTimestamp)        options.Timestamp  = false;
+            else if (useTimestamp)  options.Timestamp  = true;
+            if (noPolaroid)         options.Polaroid   = false;
+            else if (usePolaroid)   options.Polaroid   = true;
+            if (noShadow)           options.SoftShadow = false;
+            else if (useShadow)     options.SoftShadow = true;
+
+            options.Highlights.AddRange(highlights);
+
+            // Process files
+            int exit = 0;
+            for (int idx = 0; idx < files.Length; idx++)
+            {
+                var input  = files[idx];
+                var output = idx < outputs.Length
+                    ? outputs[idx]
+                    : Path.ChangeExtension(input, ExtFor(options.Format));
+
+                try
+                {
+                    if (!quiet) Console.WriteLine($"Processing: {input} -> {output}");
+
+                    var video = new Video(input, ffBinaryFolder: ffmpegFolder);
+                    if (!await video.IsValidAsync(ct))
+                        throw new CaptureException("Not a valid video or no video stream.");
+
+                    IProgress<double>? progress = quiet ? null
+                        : new Progress<double>(p => Console.Write($"\r  {p:P0} captured   "));
+
+                    await video.SaveContactSheetAsync(output, options, progress, ct);
+                    if (!quiet) Console.WriteLine($"\r  Done: {output}            ");
+                }
+                catch (OperationCanceledException) { return 130; }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Failed for '{input}': {ex.Message}");
+                    exit = 1;
+                    if (!continueOnErr) return exit;
                 }
             }
-        }
-        catch (Exception ex)
+
+            return exit;
+        });
+
+        return await rootCommand.Parse(args).InvokeAsync();
+    }
+
+    // Creates a nullable TimeIndex option with a custom parser.
+    private static Option<TimeIndex?> TimeIndexOption(string name, string description)
+        => TimeIndexOption(name, null, description);
+
+    private static Option<TimeIndex?> TimeIndexOption(string name, string? alias, string description)
+    {
+        var opt = alias is not null
+            ? new Option<TimeIndex?>(name, alias) { Description = description }
+            : new Option<TimeIndex?>(name)        { Description = description };
+
+        opt.CustomParser = result =>
         {
-            Console.Error.WriteLine($"Error parsing arguments: {ex.Message}");
-            return 1;
-        }
-
-        if (inputs.Count == 0)
-        {
-            Console.Error.WriteLine("No input file specified.");
-            return 1;
-        }
-
-        // Auto-detect bundled binaries next to the executable (takes precedence over PATH).
-        ffBinaryFolder ??= DetectBundledBinaries();
-
-        int exit = 0;
-        for (int idx = 0; idx < inputs.Count; idx++)
-        {
-            string input = inputs[idx];
-            string output = idx < outputs.Count
-                ? outputs[idx]
-                : Path.ChangeExtension(input, ExtFor(options.Format));
-
-            try
+            var token = result.Tokens.SingleOrDefault()?.Value;
+            if (token is null) return null;
+            if (!TimeIndex.TryParse(token, out var t))
             {
-                if (!quiet) Console.WriteLine($"Processing: {input} -> {output}");
-                var video = new Video(input, ffBinaryFolder: ffBinaryFolder);
-                if (!await video.IsValidAsync())
-                    throw new CaptureException("Not a valid video or no video stream.");
-
-                IProgress<double>? progress = quiet ? null
-                    : new Progress<double>(p => Console.Write($"\r  {p:P0} captured   "));
-
-                await video.SaveContactSheetAsync(output, options, progress);
-                if (!quiet) Console.WriteLine($"\r  Done: {output}            ");
+                result.AddError($"Invalid time '{token}'. Expected formats: 90, 1:22, 3m30, 1h2m3s.");
+                return null;
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Failed for '{input}': {ex.Message}");
-                exit = 1;
-                if (!keepGoing) return exit;
-            }
-        }
+            return t;
+        };
 
-        return exit;
+        return opt;
     }
 
     private static string? DetectBundledBinaries()
     {
-        var dir = AppContext.BaseDirectory;
+        var dir  = AppContext.BaseDirectory;
         var name = OperatingSystem.IsWindows() ? "ffmpeg.exe" : "ffmpeg";
         return File.Exists(Path.Combine(dir, name)) ? dir : null;
     }
 
     private static SheetFormat ParseFormat(string s) => s.ToLowerInvariant() switch
     {
-        "png" => SheetFormat.Png,
         "jpg" or "jpeg" => SheetFormat.Jpg,
-        "webp" => SheetFormat.Webp,
-        _ => throw new ArgumentException($"Unsupported format: {s}"),
+        "webp"          => SheetFormat.Webp,
+        _               => SheetFormat.Png,
     };
 
     private static string ExtFor(SheetFormat f) => f switch
     {
-        SheetFormat.Jpg => "jpg",
+        SheetFormat.Jpg  => "jpg",
         SheetFormat.Webp => "webp",
-        _ => "png",
+        _                => "png",
     };
-
-    private static void PrintHelp()
-    {
-        Console.WriteLine($"""
-            Video Contact Sheet .NET {Version}
-
-            Usage: vcs [options] <video> [<video> ...]
-
-                -i, --interval [INTERVAL]   Capture at this interval (e.g. 3m30, 90, 1:22)
-                -c, --columns [COLUMNS]     Number of columns (default 4)
-                -r, --rows [ROWS]           Number of rows (default 4)
-                -W, --width [WIDTH]         Thumbnail width in px (default 320)
-                    --from [FROM]           Start time
-                -t, --to [TO]               End time
-                -f, --format [FORMAT]       png, jpg, jpeg, webp
-                -T, --title [TITLE]         Sheet title
-                -o, --output [FILE]         Output file (repeatable, paired with inputs)
-                -s, --signature [TEXT]      Footer signature text
-                    --no-signature          Remove footer signature
-                -l, --highlight [TIME]      Add a highlight frame at TIME (repeatable)
-                    --[no-]timestamp        Timestamp overlay (default on)
-                    --[no-]polaroid         Polaroid frame (default off)
-                    --[no-]shadow           Drop shadow (default on)
-                    --ffmpeg-folder [DIR]    Folder containing ffmpeg/ffprobe binaries
-                -q, --quiet                 Only print errors
-                    --continue              Continue with next file on error
-                -v, --version               Print version
-                -h, --help                  Show this help
-
-            Examples:
-              vcs video.avi
-              vcs -i 3m30 input.wmv -o output.jpg
-              vcs --from 3m --to 18m -i 2m input.avi
-            """);
-    }
 }

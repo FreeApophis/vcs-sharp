@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VideoContactSheet\VideoContactSheet.csproj" />
+    <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 
   <!-- Copy platform-specific ffmpeg binaries into the build output so the CLI works without a global install. -->
