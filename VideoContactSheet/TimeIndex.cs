@@ -31,7 +31,9 @@ public readonly struct TimeIndex : IComparable<TimeIndex>, IEquatable<TimeIndex>
     public static TimeIndex Parse(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
+        {
             throw new FormatException("Time index is empty.");
+        }
 
         input = input.Trim();
 
@@ -40,42 +42,75 @@ public readonly struct TimeIndex : IComparable<TimeIndex>, IEquatable<TimeIndex>
         {
             var parts = input.Split(':');
             if (parts.Length is < 2 or > 3)
+            {
                 throw new FormatException($"Invalid colon time index: '{input}'.");
+            }
 
             double seconds = 0;
             foreach (var p in parts)
-                seconds = seconds * 60 + double.Parse(p, CultureInfo.InvariantCulture);
+            {
+                seconds = (seconds * 60) + double.Parse(p, CultureInfo.InvariantCulture);
+            }
 
             return new TimeIndex(seconds);
         }
 
         // Plain seconds
         if (double.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out var plain))
+        {
             return new TimeIndex(plain);
+        }
 
         // Unit notation (allow "3m30" meaning 3m30s)
         var normalized = Regex.Replace(input, @"(\dm)(\d+)$", "$1$2s", RegexOptions.IgnoreCase);
         var match = UnitPattern.Match(normalized);
         if (!match.Success || normalized.Length == 0)
+        {
             throw new FormatException($"Invalid time index: '{input}'.");
+        }
 
         double total = 0;
-        if (match.Groups["h"].Success) total += double.Parse(match.Groups["h"].Value, CultureInfo.InvariantCulture) * 3600;
-        if (match.Groups["m"].Success) total += double.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture) * 60;
-        if (match.Groups["s"].Success) total += double.Parse(match.Groups["s"].Value, CultureInfo.InvariantCulture);
-        if (match.Groups["ms"].Success) total += double.Parse(match.Groups["ms"].Value, CultureInfo.InvariantCulture) / 1000.0;
+        if (match.Groups["h"].Success)
+        {
+            total += double.Parse(match.Groups["h"].Value, CultureInfo.InvariantCulture) * 3600;
+        }
+
+        if (match.Groups["m"].Success)
+        {
+            total += double.Parse(match.Groups["m"].Value, CultureInfo.InvariantCulture) * 60;
+        }
+
+        if (match.Groups["s"].Success)
+        {
+            total += double.Parse(match.Groups["s"].Value, CultureInfo.InvariantCulture);
+        }
+
+        if (match.Groups["ms"].Success)
+        {
+            total += double.Parse(match.Groups["ms"].Value, CultureInfo.InvariantCulture) / 1000.0;
+        }
 
         if (total == 0 && !match.Groups["s"].Success && !match.Groups["m"].Success
             && !match.Groups["h"].Success && !match.Groups["ms"].Success)
+        {
             throw new FormatException($"Invalid time index: '{input}'.");
+        }
 
         return new TimeIndex(total);
     }
 
     public static bool TryParse(string input, out TimeIndex result)
     {
-        try { result = Parse(input); return true; }
-        catch { result = default; return false; }
+        try
+        {
+            result = Parse(input);
+            return true;
+        }
+        catch
+        {
+            result = default;
+            return false;
+        }
     }
 
     /// <summary>Format as H:MM:SS (hours omitted when zero), matching the timestamp overlay style.</summary>
@@ -88,15 +123,24 @@ public readonly struct TimeIndex : IComparable<TimeIndex>, IEquatable<TimeIndex>
     }
 
     public int CompareTo(TimeIndex other) => Value.CompareTo(other.Value);
+
     public bool Equals(TimeIndex other) => Value.Equals(other.Value);
+
     public override bool Equals(object? obj) => obj is TimeIndex t && Equals(t);
+
     public override int GetHashCode() => Value.GetHashCode();
+
     public override string ToString() => ToTimestamp();
 
     public static bool operator <(TimeIndex a, TimeIndex b) => a.CompareTo(b) < 0;
+
     public static bool operator >(TimeIndex a, TimeIndex b) => a.CompareTo(b) > 0;
+
     public static bool operator <=(TimeIndex a, TimeIndex b) => a.CompareTo(b) <= 0;
+
     public static bool operator >=(TimeIndex a, TimeIndex b) => a.CompareTo(b) >= 0;
+
     public static bool operator ==(TimeIndex a, TimeIndex b) => a.Equals(b);
+
     public static bool operator !=(TimeIndex a, TimeIndex b) => !a.Equals(b);
 }

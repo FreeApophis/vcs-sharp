@@ -1,11 +1,9 @@
-﻿namespace VideoContactSheet.Test
-{
-    public class UnitTest1
-    {
-        [Fact]
-        public void Test1()
-        {
+namespace VideoContactSheet.Test;
 
-        }
+public class UnitTest1
+{
+    [Fact]
+    public void Test1()
+    {
     }
 }

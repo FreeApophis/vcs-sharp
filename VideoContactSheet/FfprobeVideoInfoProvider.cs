@@ -13,14 +13,19 @@ public sealed class FfprobeVideoInfoProvider
     public async Task<VideoInfo> ProbeAsync(string path, CancellationToken ct = default)
     {
         if (!File.Exists(path))
+        {
             throw new FileNotFoundException("Video file not found.", path);
+        }
 
         IMediaAnalysis analysis;
         try
         {
             analysis = await FFProbe.AnalyseAsync(path, _ffOptions, ct).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             throw new CaptureException($"ffprobe failed: {ex.Message}", ex);

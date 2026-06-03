@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--<PackageReference Include="Polyadic.CodeStyle" PrivateAssets="all" />-->
+    <PackageReference Include="Polyadic.CodeStyle" PrivateAssets="all" />
   </ItemGroup>
   <PropertyGroup>
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
