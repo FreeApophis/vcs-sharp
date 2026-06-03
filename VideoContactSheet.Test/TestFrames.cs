@@ -5,7 +5,7 @@ internal static class TestFrames
 {
     /// <summary>A fixed palette so tests can assert exact pixel colours.</summary>
     public static readonly SKColor[] Palette =
-    {
+    [
         new(0xE0, 0x10, 0x10),
         new(0x10, 0xE0, 0x10),
         new(0x10, 0x10, 0xE0),
@@ -14,7 +14,7 @@ internal static class TestFrames
         new(0x10, 0xE0, 0xE0),
         new(0xF0, 0x80, 0x10),
         new(0x80, 0x10, 0xF0),
-    };
+    ];
 
     public static SKBitmap Solid(int width, int height, SKColor color)
     {
@@ -74,10 +74,10 @@ internal sealed class FakeProbe : IVideoInfoProvider
             FileSize = 1_000_000,
             FormatName = "fake",
             Extension = "mkv",
-            VideoStreams = new[]
-            {
+            VideoStreams =
+            [
                 new VideoStream { Index = 0, Codec = "h264", Width = 1920, Height = 1080, FrameRate = 25 },
-            },
+            ],
             AudioStreams = Array.Empty<AudioStream>(),
         };
 

@@ -59,11 +59,14 @@ public sealed class ContactSheet
         float sigH = (o.ShowSignature && !string.IsNullOrEmpty(o.Signature))
             ? LineHeight(sigFont) + (2 * padding) + 6
             : 0;
-        float highlightBandH = highlightRows > 0 ? (highlightRows * (cellH + padding)) + padding : 0;
+        // Cells reserve the shadow at their bottom-right, so without a matching inset on the
+        // top-left the outer margins would be asymmetric (tight top/left, loose bottom/right).
+        // Add `shadow` to the left/top margin and grow the canvas by it to keep all four equal.
+        float highlightBandH = highlightRows > 0 ? (highlightRows * (cellH + padding)) + padding + shadow : 0;
 
         int gridW = (columns * cellW) + ((columns + 1) * padding);
-        int width = gridW;
-        float gridH = (regularRows * (cellH + padding)) + padding;
+        int width = gridW + shadow;
+        float gridH = (regularRows * (cellH + padding)) + padding + shadow;
 
         float totalH = titleH + headerH + highlightBandH + gridH + sigH;
 
@@ -147,12 +150,12 @@ public sealed class ContactSheet
             // Extend to the ceil-rounded image bottom so no background sliver shows below the band.
             float fy = totalH - sigH;
             DrawBand(canvas, new SKRect(0, fy, width, imageHeight), o.SignatureStyle.Background);
-            DrawTextRight(
+            DrawTextCentered(
                 canvas,
                 o.Signature!,
                 sigFont,
                 o.SignatureStyle.Color,
-                width - padding - 4,
+                width / 2f,
                 fy + (sigH / 2f));
         }
 
@@ -178,12 +181,12 @@ public sealed class ContactSheet
         var o = _options;
         using var tsFont = CreateFont(o.TimestampStyle);
 
-        float y = startY + padding;
+        float y = startY + padding + shadow;
         for (int i = 0; i < items.Count; i++)
         {
             int col = i % columns;
             int row = i / columns;
-            float cellX = padding + (col * (cellW + padding));
+            float cellX = padding + shadow + (col * (cellW + padding));
             float cellY = y + (row * (cellH + padding));
 
             float imgX = cellX + polaroidPad;
@@ -226,7 +229,7 @@ public sealed class ContactSheet
         }
 
         int rows = (int)Math.Ceiling(items.Count / (double)columns);
-        return startY + (rows * (cellH + padding)) + padding;
+        return startY + (rows * (cellH + padding)) + padding + shadow;
     }
 
     private void DrawTimestamp(
@@ -318,21 +321,6 @@ public sealed class ContactSheet
     {
         using var paint = new SKPaint { Color = color, IsAntialias = true };
         canvas.DrawText(text, x, baseline, font, paint);
-    }
-
-    private static void DrawTextRight(
-        SKCanvas canvas,
-        string text,
-        SKFont font,
-        SKColor color,
-        float right,
-        float cy)
-    {
-        using var paint = new SKPaint { Color = color, IsAntialias = true };
-        float w = MeasureTextWidth(font, text);
-        var m = font.Metrics;
-        float baseline = cy - ((m.Ascent + m.Descent) / 2);
-        canvas.DrawText(text, right - w, baseline, font, paint);
     }
 
     /// <summary>Right-aligns text against <paramref name="right"/> at an explicit baseline.</summary>

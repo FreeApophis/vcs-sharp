@@ -2,7 +2,7 @@
   "profiles": {
     "VideoContactSheet.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "\"C:\\Users\\Apophis\\Videos\\ons3on3cup_hdtv.mp4\" -c 3 -i 1:00"
+      "commandLineArgs": "\"C:\\Users\\Apophis\\Videos\\ons3on3cup_hdtv.mp4\" -c 3 -i 1:00 --polaroid"
     }
   }
 }

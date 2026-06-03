@@ -8,7 +8,7 @@ public class HeaderBuilderTests
         var header = HeaderBuilder.Build("movie.mp4", SampleInfo());
 
         Assert.Equal(
-            new[] { "Filename: movie.mp4", "File size: 600 MiB", "Length: 14:34" },
+            ["Filename: movie.mp4", "File size: 600 MiB", "Length: 14:34"],
             header.Left);
     }
 
@@ -18,7 +18,7 @@ public class HeaderBuilderTests
         var header = HeaderBuilder.Build("movie.mp4", SampleInfo());
 
         Assert.Equal(
-            new[] { "Dimensions: 1280x720", "Format: h264 (High) / aac", "FPS: 29.97" },
+            ["Dimensions: 1280x720", "Format: h264 (High) / aac", "FPS: 29.97"],
             header.Right);
     }
 
@@ -29,7 +29,7 @@ public class HeaderBuilderTests
         {
             FileSize = 1024,
             Duration = TimeSpan.FromMinutes(1),
-            VideoStreams = new[] { new VideoStream { Width = 640, Height = 480, Codec = "vp9", FrameRate = 24 } },
+            VideoStreams = [new VideoStream { Width = 640, Height = 480, Codec = "vp9", FrameRate = 24 }],
             AudioStreams = Array.Empty<AudioStream>(),
         };
 
@@ -46,7 +46,7 @@ public class HeaderBuilderTests
         {
             FileSize = 1024,
             Duration = new TimeSpan(1, 2, 3),
-            VideoStreams = new[] { new VideoStream { Width = 1280, Height = 720, Codec = "h264" } },
+            VideoStreams = [new VideoStream { Width = 1280, Height = 720, Codec = "h264" }],
         };
 
         var header = HeaderBuilder.Build("movie.mp4", info);
@@ -58,10 +58,10 @@ public class HeaderBuilderTests
     {
         FileSize = 600L * 1024 * 1024,
         Duration = new TimeSpan(0, 14, 34),
-        VideoStreams = new[]
-        {
+        VideoStreams =
+        [
             new VideoStream { Width = 1280, Height = 720, Codec = "h264", Profile = "High", FrameRate = 29.97 },
-        },
-        AudioStreams = new[] { new AudioStream { Codec = "aac", SampleRate = 44100, Channels = 2 } },
+        ],
+        AudioStreams = [new AudioStream { Codec = "aac", SampleRate = 44100, Channels = 2 }],
     };
 }

@@ -53,7 +53,7 @@ public sealed class ContactSheetOptions
 
     public double BlankThreshold { get; set; } = 0.08;
 
-    public IReadOnlyList<int> BlankAlternatives { get; set; } = new[] { -5, 5, -10, 10, -30, 30, 0 };
+    public IReadOnlyList<int> BlankAlternatives { get; set; } = [-5, 5, -10, 10, -30, 30, 0];
 
     // ---- Colors ----
     public SKColor SheetBackground { get; set; } = SKColors.White;

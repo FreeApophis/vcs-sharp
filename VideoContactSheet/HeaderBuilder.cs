@@ -63,7 +63,7 @@ public static class HeaderBuilder
 
     private static string FormatBytes(long bytes)
     {
-        string[] units = { "B", "KiB", "MiB", "GiB", "TiB" };
+        string[] units = ["B", "KiB", "MiB", "GiB", "TiB"];
         double size = bytes;
         int u = 0;
         while (size >= 1024 && u < units.Length - 1)

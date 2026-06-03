@@ -21,7 +21,7 @@ public class ComputeTimesTests
 
         var times = NewVideo().ComputeTimes(HundredSeconds, options);
 
-        Assert.Equal(new[] { 0d, 25, 50, 75 }, times.Select(t => t.TotalSeconds));
+        Assert.Equal([0d, 25, 50, 75], times.Select(t => t.TotalSeconds));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class ComputeTimesTests
     private static readonly VideoInfo HundredSeconds = new()
     {
         Duration = TimeSpan.FromSeconds(100),
-        VideoStreams = new[] { new VideoStream { Index = 0, Width = 1920, Height = 1080 } },
+        VideoStreams = [new VideoStream { Index = 0, Width = 1920, Height = 1080 }],
     };
 
     private static Video NewVideo() => new("dummy.mkv", new FakeCapturer(), new FakeProbe());

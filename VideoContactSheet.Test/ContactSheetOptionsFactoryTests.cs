@@ -52,18 +52,18 @@ public class ContactSheetOptionsFactoryTests
     [Fact]
     public void ValidHighlights_AreParsedOntoOptions()
     {
-        var settings = Settings() with { HighlightStrings = new[] { "1:00", "90" } };
+        var settings = Settings() with { HighlightStrings = ["1:00", "90"] };
 
         var ok = ContactSheetOptionsFactory.TryCreate(settings, out var options, out _);
 
         Assert.True(ok);
-        Assert.Equal(new[] { 60d, 90 }, options.Highlights.Select(h => h.TotalSeconds));
+        Assert.Equal([60d, 90], options.Highlights.Select(h => h.TotalSeconds));
     }
 
     [Fact]
     public void InvalidHighlight_FailsWithError()
     {
-        var settings = Settings() with { HighlightStrings = new[] { "not-a-time" } };
+        var settings = Settings() with { HighlightStrings = ["not-a-time"] };
 
         var ok = ContactSheetOptionsFactory.TryCreate(settings, out _, out var error);
 
@@ -73,7 +73,7 @@ public class ContactSheetOptionsFactoryTests
 
     private static CliSettings Settings() => new()
     {
-        Files = new[] { "in.mkv" },
+        Files = ["in.mkv"],
         Outputs = Array.Empty<string>(),
         Format = "png",
         HighlightStrings = Array.Empty<string>(),
