@@ -51,7 +51,7 @@ public sealed class ContactSheet
         using var headerFont = CreateFont(o.HeaderStyle);
         using var sigFont = CreateFont(o.SignatureStyle);
 
-        var headerLines = o.ShowHeader ? BuildHeaderLines() : Array.Empty<string>();
+        var headerLines = o.ShowHeader ? BuildHeaderLines() : [];
         float titleH = !string.IsNullOrEmpty(title) ? LineHeight(titleFont) + (2 * padding) + 8 : 0;
         float headerH = headerLines.Length > 0
             ? (headerLines.Length * LineHeight(headerFont)) + (2 * padding) + 8
@@ -247,7 +247,7 @@ public sealed class ContactSheet
 
     private string[] BuildHeaderLines()
     {
-        return HeaderLinesOverride ?? Array.Empty<string>();
+        return HeaderLinesOverride ?? [];
     }
 
     // Skia helpers.

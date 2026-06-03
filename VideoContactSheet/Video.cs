@@ -61,7 +61,7 @@ public sealed class Video
         }
 
         // Try nearby offsets to dodge a blank/black frame.
-        foreach (var offset in alternatives ?? new[] { -5, 5, -10, 10, -30, 30 })
+        foreach (var offset in alternatives ?? [-5, 5, -10, 10, -30, 30])
         {
             ct.ThrowIfCancellationRequested();
             var alt = new TimeIndex(time.TotalSeconds + offset);
@@ -197,7 +197,7 @@ public sealed class Video
     {
         if (!options.ShowHeader)
         {
-            return Array.Empty<string>();
+            return [];
         }
 
         var v = info.Video;
