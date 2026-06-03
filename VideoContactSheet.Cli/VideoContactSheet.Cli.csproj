@@ -11,6 +11,10 @@
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="VideoContactSheet.Test" />
+  </ItemGroup>
+
   <!-- Copy platform-specific ffmpeg binaries into the build output so the CLI works without a global install. -->
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <Content Include="$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\ffmpeg.exe">

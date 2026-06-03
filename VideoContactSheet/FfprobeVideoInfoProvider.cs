@@ -3,7 +3,7 @@ using FFMpegCore;
 namespace VideoContactSheet;
 
 /// <summary>Probes a video file's metadata using ffprobe via FFMpegCore.</summary>
-public sealed class FfprobeVideoInfoProvider
+public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
 {
     private readonly FFOptions? _ffOptions;
 

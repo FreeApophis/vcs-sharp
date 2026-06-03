@@ -9,7 +9,7 @@ public sealed class Video
 {
     private readonly IFrameCapturer _capturer;
 
-    private readonly FfprobeVideoInfoProvider _probe;
+    private readonly IVideoInfoProvider _probe;
 
     private VideoInfo? _info;
 
@@ -18,7 +18,7 @@ public sealed class Video
     public Video(
         string path,
         IFrameCapturer? capturer = null,
-        FfprobeVideoInfoProvider? probe = null,
+        IVideoInfoProvider? probe = null,
         string? ffBinaryFolder = null)
     {
         Path = path ?? throw new ArgumentNullException(nameof(path));

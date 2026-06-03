@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Polyadic.CodeStyle" Version="1.1.0" />
+    <PackageVersion Include="Verify.Xunit" Version="31.12.5" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Funcky" Version="3.6.0" />
