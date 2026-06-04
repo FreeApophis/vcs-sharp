@@ -64,7 +64,7 @@ public readonly struct TimeIndex : IComparable<TimeIndex>, IEquatable<TimeIndex>
         // Unit notation (allow "3m30" meaning 3m30s)
         var normalized = Regex.Replace(input, @"(\dm)(\d+)$", "$1$2s", RegexOptions.IgnoreCase);
         var match = UnitPattern.Match(normalized);
-        if (!match.Success || normalized.Length == 0)
+        if (!match.Success)
         {
             throw new FormatException($"Invalid time index: '{input}'.");
         }

@@ -20,7 +20,7 @@ public static class FrameAnalysis
     private static IEnumerable<SKColor> GetSampledPixels(SKBitmap bitmap)
         => from y in Enumerable.Range(0, bitmap.Height / SampleStep)
            from x in Enumerable.Range(0, bitmap.Width / SampleStep)
-           select bitmap.GetPixel(x, y);
+           select bitmap.GetPixel(x * SampleStep, y * SampleStep);
 
     private static double Luminosity(SKColor color)
         => ((RedWeight * color.Red) + (GreenWeight * color.Green) + (BlueWeight * color.Blue)) / NormalizationFactor;

@@ -30,10 +30,13 @@ public static class FormatNumbers
             => bytes < suffix.Magnitude * KiFactor;
 
     private static Func<Unit, string> FormatBytes(double bytes)
-        => suffix
-            => suffix.Integral
-                ? $"{(long)(bytes / suffix.Magnitude)} {suffix.Suffix}"
-                : $"{bytes / suffix.Magnitude:F1} {suffix.Suffix}";
+        => suffix =>
+        {
+            double scaled = bytes / suffix.Magnitude;
+            return suffix.Integral || scaled == Math.Floor(scaled)
+                ? $"{(long)scaled} {suffix.Suffix}"
+                : $"{scaled:F1} {suffix.Suffix}";
+        };
 
     private record Unit(double Magnitude, string Suffix, bool Integral);
 }

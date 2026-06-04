@@ -28,7 +28,7 @@ Key source files in the library:
 - `FfmpegCapturer.cs` — `IFrameCapturer` interface, `FfmpegCapturer` (FFMpegCore pipe → PNG → SKBitmap), `FrameAnalysis`
 - `FfprobeVideoInfoProvider.cs` — `FFProbe.AnalyseAsync` → `VideoInfo`
 - `TimeIndex.cs` — flexible time parser ("3m30", "1:22", "90", "1h2m3s")
-- `ProcessRunner.cs` — public exception types only: `ToolNotFoundException`, `CaptureException`
+- `CaptureException.cs` — exception thrown when a frame capture fails
 
 ## Target framework
 

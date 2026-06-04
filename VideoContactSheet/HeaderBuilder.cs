@@ -11,22 +11,22 @@ public static class HeaderBuilder
 
     private static List<string> RightColumn(VideoInfo info)
     {
-        var v = info.Video;
-        var a = info.Audio;
+        var videoInfo = info.Video;
+        var audioInfo = info.Audio;
 
         var right = new List<string>();
-        if (v is not null)
+        if (videoInfo is not null)
         {
-            right.Add($"Dimensions: {v.Width}x{v.Height}");
+            right.Add($"Dimensions: {videoInfo.Width}x{videoInfo.Height}");
         }
 
-        var format = FormatCodecs(v, a);
+        var format = FormatCodecs(videoInfo, audioInfo);
         if (format is not null)
         {
             right.Add($"Format: {format}");
         }
 
-        if (v?.FrameRate is { } fps)
+        if (videoInfo?.FrameRate is { } fps)
         {
             right.Add($"FPS: {fps:0.##}");
         }
