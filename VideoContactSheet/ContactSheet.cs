@@ -14,14 +14,90 @@ public sealed class ContactSheet
     /// <summary>Optional two-column metadata header injected by the orchestrator.</summary>
     public HeaderColumns? HeaderOverride { get; set; }
 
-    /// <summary>
-    /// Compose the supplied thumbnails into a single sheet image and return the encoded bytes.
-    /// </summary>
+    private abstract record Element;
+
+    private sealed record ColorRect(SKRect Bounds, SKColor Color) : Element;
+
+    private sealed record BlurShadow(SKRect Bounds, float Blur) : Element;
+
+    private sealed record BitmapEl(SKBitmap Image, SKRect Dest) : Element;
+
+    private sealed record TextEl(string Content, SKFont Font, SKColor Color, float X, float Y) : Element;
+
+    private sealed record Sheet(int Width, int Height, IReadOnlyList<Element> Elements);
+
+    private sealed record GridSpec(int ThumbW, int ThumbH, int CellW, int CellH, int Margin, int Columns);
+
     public byte[] Render(IReadOnlyList<Thumbnail> thumbnails, string? title = null)
     {
-        var o = _options;
-        title ??= o.Title;
+        title ??= _options.Title;
 
+        using var titleFont = CreateFont(_options.TitleStyle);
+        using var headerFont = CreateFont(_options.HeaderStyle);
+        using var sigFont = CreateFont(_options.SignatureStyle);
+        using var tsFont = CreateFont(_options.TimestampStyle);
+
+        var sheet = Compose(thumbnails, title, titleFont, headerFont, sigFont, tsFont);
+
+        using var surface = SKSurface.Create(new SKImageInfo(sheet.Width, sheet.Height));
+        var canvas = surface.Canvas;
+        canvas.Clear(_options.SheetBackground);
+
+        foreach (var element in sheet.Elements)
+        {
+            Draw(canvas, element);
+        }
+
+        using var image = surface.Snapshot();
+        using var data = image.Encode(EncodeFormat(_options.Format), _options.JpegQuality);
+        return data.ToArray();
+    }
+
+    private static void Draw(SKCanvas canvas, Element element)
+    {
+        switch (element)
+        {
+            case ColorRect(var b, var c) when c.Alpha > 0:
+            {
+                using var p = new SKPaint { Color = c };
+                canvas.DrawRect(b, p);
+                break;
+            }
+
+            case BlurShadow(var b, var blur):
+            {
+                using var p = new SKPaint
+                {
+                    Color = new SKColor(0, 0, 0, 140),
+                    ImageFilter = SKImageFilter.CreateBlur(blur, blur),
+                    IsAntialias = true,
+                };
+                canvas.DrawRect(b, p);
+                break;
+            }
+
+            case BitmapEl(var bmp, var dest):
+                canvas.DrawBitmap(bmp, dest);
+                break;
+
+            case TextEl(var text, var font, var color, var x, var y):
+            {
+                using var p = new SKPaint { Color = color, IsAntialias = true };
+                canvas.DrawText(text, x, y, font, p);
+                break;
+            }
+        }
+    }
+
+    private Sheet Compose(
+        IReadOnlyList<Thumbnail> thumbnails,
+        string? title,
+        SKFont titleFont,
+        SKFont headerFont,
+        SKFont sigFont,
+        SKFont tsFont)
+    {
+        var o = _options;
         var highlights = thumbnails.Where(t => t.IsHighlight).ToList();
         var regular = thumbnails.Where(t => !t.IsHighlight).ToList();
 
@@ -29,247 +105,229 @@ public sealed class ContactSheet
         int padding = Math.Max(0, o.Padding);
         int shadow = o.SoftShadow ? Math.Max(0, o.ShadowSize) : 0;
         int polaroidPad = o.Polaroid ? 12 : 0;
-        int polaroidBottom = o.Polaroid ? 36 : 0;
+        int polaroidBot = o.Polaroid ? 36 : 0;
 
-        // Determine cell size from the first thumbnail (all captured at the same width).
         var sample = (regular.FirstOrDefault() ?? highlights.FirstOrDefault())?.Image
                      ?? throw new InvalidOperationException("No thumbnails to render.");
-        int thumbW = sample.Width;
-        int thumbH = sample.Height;
 
-        // The cell is just the thumbnail (+ polaroid frame). The drop shadow is NOT reserved here
-        // — it bleeds into the gap and under the neighbour — so thumbnails stay tightly spaced.
-        int cellW = thumbW + (2 * polaroidPad);
-        int cellH = thumbH + polaroidPad + polaroidBottom;
-
-        int regularRows = (int)Math.Ceiling(regular.Count / (double)columns);
-        int highlightRows = highlights.Count > 0
-            ? (int)Math.Ceiling(highlights.Count / (double)columns)
-            : 0;
-
-        // Measure header / title / footer bands.
-        using var titleFont = CreateFont(o.TitleStyle);
-        using var headerFont = CreateFont(o.HeaderStyle);
-        using var sigFont = CreateFont(o.SignatureStyle);
+        var grid = new GridSpec(
+            ThumbW: sample.Width,
+            ThumbH: sample.Height,
+            CellW: sample.Width + (2 * polaroidPad),
+            CellH: sample.Height + polaroidPad + polaroidBot,
+            Margin: padding + shadow,
+            Columns: columns);
 
         var header = o.ShowHeader ? (HeaderOverride ?? HeaderColumns.Empty) : HeaderColumns.Empty;
-        int headerRows = Math.Max(header.Left.Count, header.Right.Count);
-        float titleH = !string.IsNullOrEmpty(title) ? LineHeight(titleFont) + (2 * padding) + 8 : 0;
-        float headerH = headerRows > 0
-            ? (headerRows * LineHeight(headerFont)) + (2 * padding) + 8
-            : 0;
-        float sigH = (o.ShowSignature && !string.IsNullOrEmpty(o.Signature))
-            ? LineHeight(sigFont) + (2 * padding) + 6
-            : 0;
+        int hdrRows = Math.Max(header.Left.Count, header.Right.Count);
 
-        // Uniform layout: a gap of `padding` between thumbnails, and an outer margin of
-        // `padding + shadow` on every side. The extra `shadow` gives the directional drop-shadows
-        // room at the edges and keeps all four margins equal (top/left == bottom/right).
-        int margin = padding + shadow;
-        float highlightBandH = highlightRows > 0
-            ? (2 * margin) + (highlightRows * cellH) + ((highlightRows - 1) * padding)
-            : 0;
+        float titleH = string.IsNullOrEmpty(title) ? 0f : LineHeight(titleFont) + (2 * padding) + 8;
+        float headerH = hdrRows > 0 ? (hdrRows * LineHeight(headerFont)) + (2 * padding) + 8 : 0f;
+        float sigH = o.ShowSignature && !string.IsNullOrEmpty(o.Signature)
+            ? LineHeight(sigFont) + (2 * padding) + 6 : 0f;
 
-        int width = (2 * margin) + (columns * cellW) + ((columns - 1) * padding);
-        float gridH = (2 * margin) + (regularRows * cellH) + ((regularRows - 1) * padding);
+        int hlRows = RowCount(highlights.Count, columns);
+        int regRows = RowCount(regular.Count, columns);
+        float hlBandH = hlRows > 0
+            ? (2 * grid.Margin) + (hlRows * grid.CellH) + ((hlRows - 1) * padding)
+            : 0f;
+        float gridH = (2 * grid.Margin) + (regRows * grid.CellH) + ((regRows - 1) * padding);
 
-        float totalH = titleH + headerH + highlightBandH + gridH + sigH;
+        int width = (2 * grid.Margin) + (columns * grid.CellW) + ((columns - 1) * padding);
+        int height = (int)Math.Ceiling(titleH + headerH + hlBandH + gridH + sigH);
 
-        int imageHeight = (int)Math.Ceiling(totalH);
-        var imageInfo = new SKImageInfo(width, imageHeight);
-        using var surface = SKSurface.Create(imageInfo);
-        var canvas = surface.Canvas;
-        canvas.Clear(o.SheetBackground);
+        float titleY = 0f;
+        float headerY = titleY + titleH;
+        float hlY = headerY + headerH;
+        float gridY = hlY + hlBandH;
+        float sigY = height - sigH;
 
-        float y = 0;
+        var elements = Enumerable.Empty<Element>()
+            .Concat(TitleBand(title, titleFont, o, width, titleY, titleH))
+            .Concat(HeaderBand(header, headerFont, o, width, padding, headerY, headerH))
+            .Concat(HighlightBand(highlights, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, width, hlY, hlBandH))
+            .Concat(GridBand(regular, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, gridY))
+            .Concat(SignatureBand(o, sigFont, width, height, sigY, sigH));
 
-        // Title band.
-        if (titleH > 0)
-        {
-            DrawBand(canvas, new SKRect(0, y, width, y + titleH), o.TitleStyle.Background);
-            DrawTextCentered(canvas, title!, titleFont, o.TitleStyle.Color, width / 2f, y + (titleH / 2f));
-            y += titleH;
-        }
-
-        // Header band (metadata) — left column left-aligned, right column right-aligned.
-        if (headerH > 0)
-        {
-            DrawBand(canvas, new SKRect(0, y, width, y + headerH), o.HeaderStyle.Background);
-            float ly = y + padding + (LineHeight(headerFont) * 0.8f);
-            for (int row = 0; row < headerRows; row++)
-            {
-                if (row < header.Left.Count)
-                {
-                    DrawTextLeft(canvas, header.Left[row], headerFont, o.HeaderStyle.Color, padding + 4, ly);
-                }
-
-                if (row < header.Right.Count)
-                {
-                    DrawTextRightAt(canvas, header.Right[row], headerFont, o.HeaderStyle.Color, width - padding - 4, ly);
-                }
-
-                ly += LineHeight(headerFont);
-            }
-
-            y += headerH;
-        }
-
-        // Highlight band.
-        if (highlightBandH > 0)
-        {
-            DrawBand(canvas, new SKRect(0, y, width, y + highlightBandH), o.HighlightBackground);
-            y = DrawGrid(
-                canvas,
-                highlights,
-                columns,
-                padding,
-                shadow,
-                polaroidPad,
-                polaroidBottom,
-                cellW,
-                cellH,
-                thumbW,
-                thumbH,
-                y);
-        }
-
-        // Main grid.
-        DrawGrid(
-            canvas,
-            regular,
-            columns,
-            padding,
-            shadow,
-            polaroidPad,
-            polaroidBottom,
-            cellW,
-            cellH,
-            thumbW,
-            thumbH,
-            y);
-        y += gridH;
-
-        // Signature footer.
-        if (sigH > 0)
-        {
-            // Extend to the ceil-rounded image bottom so no background sliver shows below the band.
-            float fy = totalH - sigH;
-            DrawBand(canvas, new SKRect(0, fy, width, imageHeight), o.SignatureStyle.Background);
-            DrawTextCentered(
-                canvas,
-                o.Signature!,
-                sigFont,
-                o.SignatureStyle.Color,
-                width / 2f,
-                fy + (sigH / 2f));
-        }
-
-        using var image = surface.Snapshot();
-        using var data = image.Encode(EncodeFormat(o.Format), o.JpegQuality);
-        return data.ToArray();
+        return new Sheet(width, height, [.. elements]);
     }
 
-    private float DrawGrid(
-        SKCanvas canvas,
+    private static IEnumerable<Element> TitleBand(
+        string? title,
+        SKFont font,
+        ContactSheetOptions o,
+        int width,
+        float y,
+        float h)
+    {
+        if (h == 0 || string.IsNullOrEmpty(title))
+        {
+            yield break;
+        }
+
+        yield return new ColorRect(new SKRect(0, y, width, y + h), o.TitleStyle.Background);
+        yield return CenteredTextEl(title, font, o.TitleStyle.Color, width / 2f, y + (h / 2f));
+    }
+
+    private static IEnumerable<Element> HeaderBand(
+        HeaderColumns header,
+        SKFont font,
+        ContactSheetOptions o,
+        int width,
+        int padding,
+        float y,
+        float h)
+    {
+        if (h == 0)
+        {
+            yield break;
+        }
+
+        yield return new ColorRect(new SKRect(0, y, width, y + h), o.HeaderStyle.Background);
+
+        float lh = LineHeight(font);
+        float ly = y + padding + (lh * 0.8f);
+        int rows = Math.Max(header.Left.Count, header.Right.Count);
+
+        for (int row = 0; row < rows; row++, ly += lh)
+        {
+            if (row < header.Left.Count)
+            {
+                yield return new TextEl(header.Left[row], font, o.HeaderStyle.Color, padding + 4, ly);
+            }
+
+            if (row < header.Right.Count)
+            {
+                float tw = MeasureTextWidth(font, header.Right[row]);
+                yield return new TextEl(header.Right[row], font, o.HeaderStyle.Color, width - padding - 4 - tw, ly);
+            }
+        }
+    }
+
+    private static IEnumerable<Element> HighlightBand(
         IReadOnlyList<Thumbnail> items,
-        int columns,
+        GridSpec grid,
+        ContactSheetOptions o,
+        SKFont tsFont,
         int padding,
         int shadow,
         int polaroidPad,
-        int polaroidBottom,
-        int cellW,
-        int cellH,
-        int thumbW,
-        int thumbH,
-        float startY)
-    {
-        var o = _options;
-        using var tsFont = CreateFont(o.TimestampStyle);
-
-        int margin = padding + shadow;
-        float y = startY + margin;
-        for (int i = 0; i < items.Count; i++)
-        {
-            int col = i % columns;
-            int row = i / columns;
-            float cellX = margin + (col * (cellW + padding));
-            float cellY = y + (row * (cellH + padding));
-
-            float imgX = cellX + polaroidPad;
-            float imgY = cellY + polaroidPad;
-
-            // Drop shadow — wraps the polaroid frame when enabled, otherwise the bare thumbnail.
-            if (shadow > 0)
-            {
-                using var shadowPaint = new SKPaint
-                {
-                    Color = new SKColor(0, 0, 0, 140),
-                    ImageFilter = SKImageFilter.CreateBlur(shadow / 2f, shadow / 2f),
-                    IsAntialias = true,
-                };
-                float sx = o.Polaroid ? cellX : imgX;
-                float sy = o.Polaroid ? cellY : imgY;
-                float sw = o.Polaroid ? cellW : thumbW;
-                float sh = o.Polaroid ? cellH : thumbH;
-                var shadowRect = SKRect.Create(sx + (shadow / 2f), sy + (shadow / 2f), sw, sh);
-                canvas.DrawRect(shadowRect, shadowPaint);
-            }
-
-            // Polaroid white frame.
-            if (o.Polaroid)
-            {
-                using var frame = new SKPaint { Color = SKColors.White, IsAntialias = true };
-                var frameRect = SKRect.Create(
-                    imgX - polaroidPad,
-                    imgY - polaroidPad,
-                    thumbW + (2 * polaroidPad),
-                    thumbH + polaroidPad + polaroidBottom);
-                canvas.DrawRect(frameRect, frame);
-            }
-
-            // The frame image.
-            var dest = SKRect.Create(imgX, imgY, thumbW, thumbH);
-            canvas.DrawBitmap(items[i].Image, dest);
-
-            // Timestamp overlay (bottom-right of the thumbnail).
-            if (o.Timestamp)
-            {
-                DrawTimestamp(canvas, items[i].Time.ToTimestamp(), tsFont, imgX, imgY, thumbW, thumbH);
-            }
-        }
-
-        int rows = (int)Math.Ceiling(items.Count / (double)columns);
-        return startY + (2 * margin) + (rows * cellH) + ((rows - 1) * padding);
-    }
-
-    private void DrawTimestamp(
-        SKCanvas canvas,
-        string text,
-        SKFont font,
-        float imgX,
-        float imgY,
-        float w,
+        int polaroidBot,
+        int width,
+        float y,
         float h)
     {
-        var o = _options;
-        using var fill = new SKPaint { Color = o.TimestampStyle.Color, IsAntialias = true };
-        float textW = MeasureTextWidth(font, text);
-        float lh = LineHeight(font);
-        float boxPad = 4;
-        float boxW = textW + (2 * boxPad);
-        float boxH = lh + boxPad;
-        float bx = imgX + w - boxW - 4;
-        float by = imgY + h - boxH - 4;
+        if (h == 0)
+        {
+            yield break;
+        }
 
-        using var bg = new SKPaint { Color = o.TimestampStyle.Background, IsAntialias = true };
-        canvas.DrawRect(SKRect.Create(bx, by, boxW, boxH), bg);
+        yield return new ColorRect(new SKRect(0, y, width, y + h), o.HighlightBackground);
 
-        var metrics = font.Metrics;
-        float baseline = by + ((boxH - (metrics.Descent - metrics.Ascent)) / 2) - metrics.Ascent;
-        canvas.DrawText(text, bx + boxPad, baseline, font, fill);
+        foreach (var e in GridBand(items, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, y))
+        {
+            yield return e;
+        }
     }
 
-    // Skia helpers.
+    private static IEnumerable<Element> GridBand(
+        IReadOnlyList<Thumbnail> items,
+        GridSpec grid,
+        ContactSheetOptions o,
+        SKFont tsFont,
+        int padding,
+        int shadow,
+        int polaroidPad,
+        int polaroidBot,
+        float startY)
+        => items.SelectMany((thumb, i) =>
+        {
+            float cellX = grid.Margin + ((i % grid.Columns) * (grid.CellW + padding));
+            float cellY = startY + grid.Margin + ((i / grid.Columns) * (grid.CellH + padding));
+            float imgX = cellX + polaroidPad;
+            float imgY = cellY + polaroidPad;
+            return ThumbnailElements(thumb, grid, o, tsFont, shadow, polaroidPad, cellX, cellY, imgX, imgY);
+        });
+
+    private static IEnumerable<Element> ThumbnailElements(
+        Thumbnail thumb,
+        GridSpec grid,
+        ContactSheetOptions o,
+        SKFont tsFont,
+        int shadow,
+        int polaroidPad,
+        float cellX,
+        float cellY,
+        float imgX,
+        float imgY)
+    {
+        if (shadow > 0)
+        {
+            float sx = o.Polaroid ? cellX : imgX;
+            float sy = o.Polaroid ? cellY : imgY;
+            float sw = o.Polaroid ? grid.CellW : grid.ThumbW;
+            float sh = o.Polaroid ? grid.CellH : grid.ThumbH;
+            yield return new BlurShadow(
+                SKRect.Create(sx + (shadow / 2f), sy + (shadow / 2f), sw, sh),
+                shadow / 2f);
+        }
+
+        if (o.Polaroid)
+        {
+            yield return new ColorRect(SKRect.Create(cellX, cellY, grid.CellW, grid.CellH), SKColors.White);
+        }
+
+        yield return new BitmapEl(thumb.Image, SKRect.Create(imgX, imgY, grid.ThumbW, grid.ThumbH));
+
+        if (o.Timestamp)
+        {
+            foreach (var e in TimestampElements(thumb.Time.ToTimestamp(), tsFont, o, imgX, imgY, grid.ThumbW, grid.ThumbH))
+            {
+                yield return e;
+            }
+        }
+    }
+
+    private static IEnumerable<Element> TimestampElements(
+        string text, SKFont font, ContactSheetOptions o, float imgX, float imgY, float w, float h)
+    {
+        float textW = MeasureTextWidth(font, text);
+        float lh = LineHeight(font);
+        float pad = 4f;
+        float boxW = textW + (2 * pad);
+        float boxH = lh + pad;
+        float bx = imgX + w - boxW - 4;
+        float by = imgY + h - boxH - 4;
+        var m = font.Metrics;
+        float bl = by + ((boxH - (m.Descent - m.Ascent)) / 2) - m.Ascent;
+
+        yield return new ColorRect(SKRect.Create(bx, by, boxW, boxH), o.TimestampStyle.Background);
+        yield return new TextEl(text, font, o.TimestampStyle.Color, bx + pad, bl);
+    }
+
+    private static IEnumerable<Element> SignatureBand(
+        ContactSheetOptions o, SKFont font, int width, int height, float y, float h)
+    {
+        if (h == 0)
+        {
+            yield break;
+        }
+
+        yield return new ColorRect(new SKRect(0, y, width, height), o.SignatureStyle.Background);
+        yield return CenteredTextEl(o.Signature!, font, o.SignatureStyle.Color, width / 2f, y + (h / 2f));
+    }
+
+    private static TextEl CenteredTextEl(string text, SKFont font, SKColor color, float cx, float cy)
+    {
+        var m = font.Metrics;
+        return new TextEl(
+            text,
+            font,
+            color,
+            cx - (MeasureTextWidth(font, text) / 2f),
+            cy - ((m.Ascent + m.Descent) / 2));
+    }
+
     private static SKFont CreateFont(TextStyle style)
     {
         SKTypeface typeface;
@@ -287,7 +345,6 @@ public sealed class ContactSheet
         }
         else
         {
-            // Default to the embedded DejaVu Sans (matching vcs.rb) for identical text everywhere.
             typeface = BundledFonts.ForWeight(style.Bold);
         }
 
@@ -300,63 +357,11 @@ public sealed class ContactSheet
         return m.Descent - m.Ascent + m.Leading;
     }
 
-    private static void DrawBand(SKCanvas canvas, SKRect rect, SKColor color)
-    {
-        if (color.Alpha == 0)
-        {
-            return;
-        }
+    private static int RowCount(int count, int columns) =>
+        (int)Math.Ceiling(count / (double)columns);
 
-        using var paint = new SKPaint { Color = color, IsAntialias = false };
-        canvas.DrawRect(rect, paint);
-    }
-
-    private static void DrawTextCentered(
-        SKCanvas canvas,
-        string text,
-        SKFont font,
-        SKColor color,
-        float cx,
-        float cy)
-    {
-        using var paint = new SKPaint { Color = color, IsAntialias = true };
-        float w = MeasureTextWidth(font, text);
-        var m = font.Metrics;
-        float baseline = cy - ((m.Ascent + m.Descent) / 2);
-        canvas.DrawText(text, cx - (w / 2), baseline, font, paint);
-    }
-
-    private static void DrawTextLeft(
-        SKCanvas canvas,
-        string text,
-        SKFont font,
-        SKColor color,
-        float x,
-        float baseline)
-    {
-        using var paint = new SKPaint { Color = color, IsAntialias = true };
-        canvas.DrawText(text, x, baseline, font, paint);
-    }
-
-    /// <summary>Right-aligns text against <paramref name="right"/> at an explicit baseline.</summary>
-    private static void DrawTextRightAt(
-        SKCanvas canvas,
-        string text,
-        SKFont font,
-        SKColor color,
-        float right,
-        float baseline)
-    {
-        using var paint = new SKPaint { Color = color, IsAntialias = true };
-        float w = MeasureTextWidth(font, text);
-        canvas.DrawText(text, right - w, baseline, font, paint);
-    }
-
-    // SkiaSharp 2.88.x on .NET 10 only exposes the glyph-ID overloads of SKFont.MeasureText /
-    // GetGlyphs (no string/char-span/encoding ones). Map the text to real glyph IDs via its
-    // Unicode codepoints — the same glyphs DrawText renders — so the measured width matches what
-    // is drawn. Casting chars straight to ushort (as before) measures unrelated glyphs, which
-    // made right-aligned text ragged.
+    // SkiaSharp 2.88.x on .NET 10 only exposes glyph-ID overloads of MeasureText/GetGlyphs.
+    // Map text to real glyph IDs via Unicode codepoints so measured width matches DrawText.
     private static float MeasureTextWidth(SKFont font, string text)
     {
         if (text.Length == 0)
