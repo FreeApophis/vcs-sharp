@@ -26,3 +26,4 @@ build/
 # ffmpeg/ffprobe binaries (~200 MB each platform) — not committed to git.
 # Run tools/download-ffmpeg.ps1 to populate tools/ffmpeg/ locally.
 tools/ffmpeg/
+/VideoContactSheet.Cli/Properties/launchSettings.json
