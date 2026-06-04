@@ -12,7 +12,7 @@ public sealed class FfmpegCapturer : IFrameCapturer
     public FfmpegCapturer(string? binaryFolder = null)
         => _ffOptions = binaryFolder is not null ? new FFOptions { BinaryFolder = binaryFolder } : null;
 
-    public async Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, CancellationToken ct = default)
+    public async Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, int height = 0, CancellationToken ct = default)
     {
         using var ms = new MemoryStream();
 
@@ -20,9 +20,17 @@ public sealed class FfmpegCapturer : IFrameCapturer
             .FromFileInput(videoPath, false, input => input.Seek(time.Value))
             .OutputToPipe(new StreamPipeSink(ms), output =>
             {
-                if (width > 0)
+                var scaleFilter = (width > 0, height > 0) switch
                 {
-                    output.WithCustomArgument($"-vf scale={width}:-1");
+                    (true, true) => $"scale={width}:{height}",
+                    (true, false) => $"scale={width}:-1",
+                    (false, true) => $"scale=-1:{height}",
+                    _ => string.Empty,
+                };
+
+                if (scaleFilter.Length > 0)
+                {
+                    output.WithCustomArgument($"-vf {scaleFilter}");
                 }
 
                 output.WithVideoCodec("png")

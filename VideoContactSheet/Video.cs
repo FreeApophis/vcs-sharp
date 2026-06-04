@@ -47,13 +47,14 @@ public sealed class Video
     public async Task<SKBitmap> CaptureFrameAsync(
         TimeIndex time,
         int width,
+        int height = 0,
         bool evadeBlank = false,
         double blankThreshold = 0.08,
         IReadOnlyList<int>? alternatives = null,
         CancellationToken ct = default)
     {
         var info = await GetInfoAsync(ct).ConfigureAwait(false);
-        var bitmap = await _capturer.CaptureAsync(Path, time, width, ct).ConfigureAwait(false);
+        var bitmap = await _capturer.CaptureAsync(Path, time, width, height, ct).ConfigureAwait(false);
 
         if (!evadeBlank || FrameAnalysis.AverageBrightness(bitmap) >= blankThreshold)
         {
@@ -70,7 +71,7 @@ public sealed class Video
                 continue;
             }
 
-            var candidate = await _capturer.CaptureAsync(Path, alt, width, ct).ConfigureAwait(false);
+            var candidate = await _capturer.CaptureAsync(Path, alt, width, height, ct).ConfigureAwait(false);
             if (FrameAnalysis.AverageBrightness(candidate) >= blankThreshold)
             {
                 bitmap.Dispose();
@@ -133,7 +134,21 @@ public sealed class Video
         var times = ComputeTimes(info, options);
         var thumbs = new List<ContactSheet.Thumbnail>();
 
-        // Highlights first.
+        // Resolve capture height: AspectRatio wins over ThumbnailHeight; 0 means ffmpeg auto-scales.
+        int captureHeight;
+        if (options.AspectRatio > 0)
+        {
+            captureHeight = (int)Math.Round(options.ThumbnailWidth / (double)options.AspectRatio);
+            if (captureHeight % 2 != 0)
+            {
+                captureHeight++;
+            }
+        }
+        else
+        {
+            captureHeight = options.ThumbnailHeight;
+        }
+
         int total = options.Highlights.Count + times.Count;
         int done = 0;
 
@@ -143,6 +158,7 @@ public sealed class Video
             var bmp = await CaptureFrameAsync(
                 h,
                 options.ThumbnailWidth,
+                captureHeight,
                 options.BlankEvasion,
                 options.BlankThreshold,
                 options.BlankAlternatives,
@@ -157,6 +173,7 @@ public sealed class Video
             var bmp = await CaptureFrameAsync(
                 t,
                 options.ThumbnailWidth,
+                captureHeight,
                 options.BlankEvasion,
                 options.BlankThreshold,
                 options.BlankAlternatives,

@@ -34,6 +34,17 @@ internal sealed class CliOptions
         DefaultValueFactory = _ => 320,
     };
 
+    private readonly Option<int> _height = new("--height", "-H")
+    {
+        Description = "Thumbnail height in pixels (0 = derived from aspect ratio).",
+        DefaultValueFactory = _ => 0,
+    };
+
+    private readonly Option<string?> _aspect = new("--aspect", "-A")
+    {
+        Description = "Aspect ratio override: float (1.778) or fraction (16/9).",
+    };
+
     // ── Time options ─────────────────────────────────────────────────────────────
     private readonly Option<TimeIndex?> _interval = TimeIndexOption("--interval", "-i", "Capture interval (e.g. 3m30, 90, 1:22).");
 
@@ -92,7 +103,7 @@ internal sealed class CliOptions
         => new("Video Contact Sheet — generates frame-grid images from video files.")
         {
             _files,
-            _columns, _rows, _width,
+            _columns, _rows, _width, _height, _aspect,
             _interval, _from, _to,
             _output, _format,
             _title, _signature, _noSignature,
@@ -114,6 +125,8 @@ internal sealed class CliOptions
         Columns = parse.GetValue(_columns),
         Rows = parse.GetValue(_rows),
         Width = parse.GetValue(_width),
+        Height = parse.GetValue(_height),
+        AspectRatio = parse.GetValue(_aspect),
         Format = parse.GetValue(_format)!,
         Title = parse.GetValue(_title),
         Signature = parse.GetValue(_signature),

@@ -50,15 +50,15 @@ internal sealed class FakeCapturer : IFrameCapturer
 {
     public int CaptureCount { get; private set; }
 
-    public Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, CancellationToken ct = default)
+    public Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, int height = 0, CancellationToken ct = default)
     {
         CaptureCount++;
 
         // Colour derived deterministically from the requested time so frames are distinguishable.
         int seconds = (int)time.TotalSeconds;
         var color = new SKColor((byte)((seconds * 7) % 256), (byte)((seconds * 13) % 256), (byte)((seconds * 29) % 256));
-        int height = (width * 9) / 16;
-        return Task.FromResult(TestFrames.Solid(width, height, color));
+        int captureHeight = height > 0 ? height : (width * 9) / 16;
+        return Task.FromResult(TestFrames.Solid(width, captureHeight, color));
     }
 }
 

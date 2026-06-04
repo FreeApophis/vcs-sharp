@@ -17,6 +17,15 @@ public sealed class ContactSheetOptions
 
     public int ThumbnailWidth { get; set; } = 320;
 
+    /// <summary>Thumbnail height in pixels. 0 (default) = derived automatically from the video aspect ratio.</summary>
+    public int ThumbnailHeight { get; set; } = 0;
+
+    /// <summary>
+    /// Aspect ratio override (width ÷ height, e.g. 1.778 or 16/9). 0 (default) = use the
+    /// video's native aspect ratio. When set, the capture height is <c>ThumbnailWidth / AspectRatio</c>.
+    /// </summary>
+    public float AspectRatio { get; set; } = 0f;
+
     // ---- Range ----
     public TimeIndex? From { get; set; }
 

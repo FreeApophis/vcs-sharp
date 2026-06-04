@@ -23,6 +23,10 @@ internal sealed record CliSettings
 
     public int Width { get; init; }
 
+    public int Height { get; init; }
+
+    public string? AspectRatio { get; init; }
+
     public required string Format { get; init; }
 
     public string? Title { get; init; }
