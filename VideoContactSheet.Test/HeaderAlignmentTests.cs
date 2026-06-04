@@ -36,7 +36,7 @@ public class HeaderAlignmentTests
         {
             var sheet = new ContactSheet(options)
             {
-                HeaderOverride = new HeaderColumns(Array.Empty<string>(), [rightLine]),
+                HeaderOverride = new HeaderColumns([], [rightLine]),
             };
             var bytes = sheet.Render(thumbnails);
             using var image = SKBitmap.Decode(bytes);

@@ -13,7 +13,7 @@ public sealed class ContactSheetOptions
     /// <summary>If set, frames are taken at this interval and rows are derived (overrides Rows).</summary>
     public TimeIndex? Interval { get; set; }
 
-    public int Padding { get; set; } = 2;
+    public int Padding { get; set; } = 8;
 
     public int ThumbnailWidth { get; set; } = 320;
 
@@ -53,12 +53,13 @@ public sealed class ContactSheetOptions
 
     public double BlankThreshold { get; set; } = 0.08;
 
-    public IReadOnlyList<int> BlankAlternatives { get; set; } = [-5, 5, -10, 10, -30, 30, 0];
+    public IReadOnlyList<int> BlankAlternatives { get; set; } = [-2, 2, -5, 5, -10, 10, -15, 15, -30, 30, 0];
 
     // ---- Colors ----
     public SKColor SheetBackground { get; set; } = SKColors.White;
 
-    public SKColor HighlightBackground { get; set; } = new(0x70, 0x80, 0x90);
+    // vcs.rb "LightGoldenRod" (ImageMagick/X11 name) = #EEDD82.
+    public SKColor HighlightBackground { get; set; } = new(0xEE, 0xDD, 0x82);
 
     // ---- Styles ----
     public TextStyle HeaderStyle { get; set; } = new()
@@ -73,7 +74,6 @@ public sealed class ContactSheetOptions
         Size = 33,
         Color = SKColors.Black,
         Background = SKColors.White,
-        Bold = true,
     };
 
     public TextStyle TimestampStyle { get; set; } = new()
@@ -89,22 +89,4 @@ public sealed class ContactSheetOptions
         Color = SKColors.Black,
         Background = new SKColor(0x70, 0x80, 0x90),
     };
-}
-
-/// <summary>Styling for a single text region (header, title, timestamp, signature).</summary>
-public sealed class TextStyle
-{
-    public string? FontFamily { get; set; }
-
-    public string? FontFile { get; set; }
-
-    public float Size { get; set; } = 14;
-
-    public SKColor Color { get; set; } = SKColors.Black;
-
-    public SKColor Background { get; set; } = SKColors.Transparent;
-
-    public bool Bold { get; set; }
-
-    public TextStyle Clone() => (TextStyle)MemberwiseClone();
 }

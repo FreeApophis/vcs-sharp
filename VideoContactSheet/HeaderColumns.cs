@@ -6,5 +6,5 @@ namespace VideoContactSheet;
 /// </summary>
 public sealed record HeaderColumns(IReadOnlyList<string> Left, IReadOnlyList<string> Right)
 {
-    public static HeaderColumns Empty { get; } = new(Array.Empty<string>(), Array.Empty<string>());
+    public static HeaderColumns Empty { get; } = new([], []);
 }

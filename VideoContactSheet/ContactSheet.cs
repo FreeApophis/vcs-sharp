@@ -37,8 +37,10 @@ public sealed class ContactSheet
         int thumbW = sample.Width;
         int thumbH = sample.Height;
 
-        int cellW = thumbW + (2 * polaroidPad) + shadow;
-        int cellH = thumbH + polaroidPad + polaroidBottom + shadow;
+        // The cell is just the thumbnail (+ polaroid frame). The drop shadow is NOT reserved here
+        // — it bleeds into the gap and under the neighbour — so thumbnails stay tightly spaced.
+        int cellW = thumbW + (2 * polaroidPad);
+        int cellH = thumbH + polaroidPad + polaroidBottom;
 
         int regularRows = (int)Math.Ceiling(regular.Count / (double)columns);
         int highlightRows = highlights.Count > 0
@@ -59,14 +61,17 @@ public sealed class ContactSheet
         float sigH = (o.ShowSignature && !string.IsNullOrEmpty(o.Signature))
             ? LineHeight(sigFont) + (2 * padding) + 6
             : 0;
-        // Cells reserve the shadow at their bottom-right, so without a matching inset on the
-        // top-left the outer margins would be asymmetric (tight top/left, loose bottom/right).
-        // Add `shadow` to the left/top margin and grow the canvas by it to keep all four equal.
-        float highlightBandH = highlightRows > 0 ? (highlightRows * (cellH + padding)) + padding + shadow : 0;
 
-        int gridW = (columns * cellW) + ((columns + 1) * padding);
-        int width = gridW + shadow;
-        float gridH = (regularRows * (cellH + padding)) + padding + shadow;
+        // Uniform layout: a gap of `padding` between thumbnails, and an outer margin of
+        // `padding + shadow` on every side. The extra `shadow` gives the directional drop-shadows
+        // room at the edges and keeps all four margins equal (top/left == bottom/right).
+        int margin = padding + shadow;
+        float highlightBandH = highlightRows > 0
+            ? (2 * margin) + (highlightRows * cellH) + ((highlightRows - 1) * padding)
+            : 0;
+
+        int width = (2 * margin) + (columns * cellW) + ((columns - 1) * padding);
+        float gridH = (2 * margin) + (regularRows * cellH) + ((regularRows - 1) * padding);
 
         float totalH = titleH + headerH + highlightBandH + gridH + sigH;
 
@@ -181,18 +186,19 @@ public sealed class ContactSheet
         var o = _options;
         using var tsFont = CreateFont(o.TimestampStyle);
 
-        float y = startY + padding + shadow;
+        int margin = padding + shadow;
+        float y = startY + margin;
         for (int i = 0; i < items.Count; i++)
         {
             int col = i % columns;
             int row = i / columns;
-            float cellX = padding + shadow + (col * (cellW + padding));
+            float cellX = margin + (col * (cellW + padding));
             float cellY = y + (row * (cellH + padding));
 
             float imgX = cellX + polaroidPad;
             float imgY = cellY + polaroidPad;
 
-            // Drop shadow.
+            // Drop shadow — wraps the polaroid frame when enabled, otherwise the bare thumbnail.
             if (shadow > 0)
             {
                 using var shadowPaint = new SKPaint
@@ -201,7 +207,11 @@ public sealed class ContactSheet
                     ImageFilter = SKImageFilter.CreateBlur(shadow / 2f, shadow / 2f),
                     IsAntialias = true,
                 };
-                var shadowRect = SKRect.Create(imgX + (shadow / 2f), imgY + (shadow / 2f), thumbW, thumbH);
+                float sx = o.Polaroid ? cellX : imgX;
+                float sy = o.Polaroid ? cellY : imgY;
+                float sw = o.Polaroid ? cellW : thumbW;
+                float sh = o.Polaroid ? cellH : thumbH;
+                var shadowRect = SKRect.Create(sx + (shadow / 2f), sy + (shadow / 2f), sw, sh);
                 canvas.DrawRect(shadowRect, shadowPaint);
             }
 
@@ -229,7 +239,7 @@ public sealed class ContactSheet
         }
 
         int rows = (int)Math.Ceiling(items.Count / (double)columns);
-        return startY + (rows * (cellH + padding)) + padding + shadow;
+        return startY + (2 * margin) + (rows * cellH) + ((rows - 1) * padding);
     }
 
     private void DrawTimestamp(
@@ -267,13 +277,18 @@ public sealed class ContactSheet
         {
             typeface = SKTypeface.FromFile(style.FontFile);
         }
-        else
+        else if (!string.IsNullOrEmpty(style.FontFamily))
         {
             typeface = SKTypeface.FromFamilyName(
-                style.FontFamily ?? "sans-serif",
+                style.FontFamily,
                 style.Bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal,
                 SKFontStyleWidth.Normal,
                 SKFontStyleSlant.Upright);
+        }
+        else
+        {
+            // Default to the embedded DejaVu Sans (matching vcs.rb) for identical text everywhere.
+            typeface = BundledFonts.ForWeight(style.Bold);
         }
 
         return new SKFont(typeface ?? SKTypeface.Default, style.Size);

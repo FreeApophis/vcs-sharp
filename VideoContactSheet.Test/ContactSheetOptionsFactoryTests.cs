@@ -74,9 +74,9 @@ public class ContactSheetOptionsFactoryTests
     private static CliSettings Settings() => new()
     {
         Files = ["in.mkv"],
-        Outputs = Array.Empty<string>(),
+        Outputs = [],
         Format = "png",
-        HighlightStrings = Array.Empty<string>(),
+        HighlightStrings = [],
         Columns = 4,
         Rows = 4,
         Width = 320,

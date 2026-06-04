@@ -30,7 +30,7 @@ public class HeaderBuilderTests
             FileSize = 1024,
             Duration = TimeSpan.FromMinutes(1),
             VideoStreams = [new VideoStream { Width = 640, Height = 480, Codec = "vp9", FrameRate = 24 }],
-            AudioStreams = Array.Empty<AudioStream>(),
+            AudioStreams = [],
         };
 
         var header = HeaderBuilder.Build("clip.webm", info);

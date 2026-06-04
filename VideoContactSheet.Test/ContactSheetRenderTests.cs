@@ -165,6 +165,63 @@ public class ContactSheetRenderTests
         }
     }
 
+    [Fact]
+    public void Render_WithShadows_KeepsInterThumbnailGapEqualToPadding()
+    {
+        var options = new ContactSheetOptions
+        {
+            Columns = 3,
+            Rows = 1,
+            Padding = 4,
+            SoftShadow = true,
+            ShadowSize = 6,
+            Polaroid = false,
+            Timestamp = false,
+            ShowHeader = false,
+            ShowSignature = false,
+            Title = null,
+        };
+        var thumbnails = TestFrames.Grid(3, 120, 68);
+
+        try
+        {
+            var bytes = new ContactSheet(options).Render(thumbnails);
+            using var decoded = SKBitmap.Decode(bytes);
+
+            // Scan a line through the row and collect the vivid (thumbnail) runs.
+            int scanY = options.Padding + options.ShadowSize + 34;
+            var runs = new List<(int Start, int End)>();
+            int runStart = -1;
+            for (int x = 0; x < decoded.Width; x++)
+            {
+                var p = decoded.GetPixel(x, scanY);
+                bool vivid = Math.Max(p.Red, Math.Max(p.Green, p.Blue)) - Math.Min(p.Red, Math.Min(p.Green, p.Blue)) > 60;
+                if (vivid && runStart < 0)
+                {
+                    runStart = x;
+                }
+                else if (!vivid && runStart >= 0)
+                {
+                    runs.Add((runStart, x - 1));
+                    runStart = -1;
+                }
+            }
+
+            Assert.Equal(3, runs.Count);
+
+            // The gap between adjacent thumbnails must be just `padding` — not `padding + shadow`.
+            for (int i = 1; i < runs.Count; i++)
+            {
+                int gap = runs[i].Start - runs[i - 1].End - 1;
+                Assert.InRange(gap, options.Padding - 1, options.Padding + 1);
+            }
+        }
+        finally
+        {
+            TestFrames.DisposeAll(thumbnails);
+        }
+    }
+
     // Text-free so the snapshot is portable: no fonts (the one cross-machine variable) participate.
     private static ContactSheetOptions TextFreeOptions() => new()
     {

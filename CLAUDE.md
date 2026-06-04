@@ -50,6 +50,14 @@ var video = new Video("movie.mkv", ffBinaryFolder: AppContext.BaseDirectory);
 
 To add Linux/macOS support: download the respective platform builds, put them in `tools/ffmpeg/linux-x64/` (etc.), and add matching `<Content>` blocks with an `IsOSPlatform('Linux')` condition in the CLI `.csproj`.
 
+## Bundled font
+
+DejaVu Sans (regular + bold) is embedded in the core library as assembly resources
+(`VideoContactSheet/Fonts/*.ttf`, `<EmbeddedResource>` in the `.csproj`; license in
+`Fonts/LICENSE`). `BundledFonts` loads them once (cached `SKTypeface`), and `ContactSheet.CreateFont`
+uses them by default — matching the original vcs.rb and making text render identically on every
+platform. Per-`TextStyle` `FontFile` (path) or `FontFamily` (system font name) still override it.
+
 ## Known SkiaSharp API quirk
 
 In SkiaSharp 2.88.x on .NET 10, the string/char-span/encoding overloads of `SKFont.MeasureText`

@@ -13,9 +13,9 @@ public sealed class VideoInfo
 
     public string Extension { get; init; } = string.Empty;
 
-    public IReadOnlyList<VideoStream> VideoStreams { get; init; } = Array.Empty<VideoStream>();
+    public IReadOnlyList<VideoStream> VideoStreams { get; init; } = [];
 
-    public IReadOnlyList<AudioStream> AudioStreams { get; init; } = Array.Empty<AudioStream>();
+    public IReadOnlyList<AudioStream> AudioStreams { get; init; } = [];
 
     /// <summary>First video stream, or null when there is none.</summary>
     public VideoStream? Video => VideoStreams.Count > 0 ? VideoStreams[0] : null;

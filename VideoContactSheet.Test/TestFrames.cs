@@ -78,7 +78,7 @@ internal sealed class FakeProbe : IVideoInfoProvider
             [
                 new VideoStream { Index = 0, Codec = "h264", Width = 1920, Height = 1080, FrameRate = 25 },
             ],
-            AudioStreams = Array.Empty<AudioStream>(),
+            AudioStreams = [],
         };
 
     public Task<VideoInfo> ProbeAsync(string path, CancellationToken ct = default) => Task.FromResult(_info);

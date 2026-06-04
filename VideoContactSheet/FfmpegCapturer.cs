@@ -56,27 +56,3 @@ public sealed class FfmpegCapturer : IFrameCapturer
             ?? throw new CaptureException($"Failed to decode captured frame at {time}.");
     }
 }
-
-/// <summary>Utility to measure average brightness, used for blank-frame evasion.</summary>
-public static class FrameAnalysis
-{
-    /// <summary>Mean luma in the 0..1 range.</summary>
-    public static double AverageBrightness(SKBitmap bitmap)
-    {
-        // Sample on a grid for speed instead of every pixel.
-        const int step = 8;
-        double sum = 0;
-        int count = 0;
-        for (int y = 0; y < bitmap.Height; y += step)
-        {
-            for (int x = 0; x < bitmap.Width; x += step)
-            {
-                var c = bitmap.GetPixel(x, y);
-                sum += ((0.2126 * c.Red) + (0.7152 * c.Green) + (0.0722 * c.Blue)) / 255.0;
-                count++;
-            }
-        }
-
-        return count == 0 ? 0 : sum / count;
-    }
-}
