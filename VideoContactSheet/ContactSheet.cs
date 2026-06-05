@@ -126,10 +126,18 @@ public sealed class ContactSheet
         float sigH = o.ShowSignature && !string.IsNullOrEmpty(o.Signature)
             ? LineHeight(sigFont) + (2 * padding) + 6 : 0f;
 
+        var hlGrid = new GridSpec(
+            ThumbW: grid.ThumbW * 2,
+            ThumbH: grid.ThumbH * 2,
+            CellW: (grid.ThumbW * 2) + (2 * polaroidPad),
+            CellH: (grid.ThumbH * 2) + polaroidPad + polaroidBot,
+            Margin: grid.Margin,
+            Columns: columns);
+
         int hlRows = RowCount(highlights.Count, columns);
         int regRows = RowCount(regular.Count, columns);
         float hlBandH = hlRows > 0
-            ? (2 * grid.Margin) + (hlRows * grid.CellH) + ((hlRows - 1) * padding)
+            ? (2 * hlGrid.Margin) + (hlRows * hlGrid.CellH) + ((hlRows - 1) * padding)
             : 0f;
         float gridH = (2 * grid.Margin) + (regRows * grid.CellH) + ((regRows - 1) * padding);
 
@@ -145,7 +153,7 @@ public sealed class ContactSheet
         var elements = Enumerable.Empty<Element>()
             .Concat(TitleBand(title, titleFont, o, width, titleY, titleH))
             .Concat(HeaderBand(header, headerFont, o, width, padding, headerY, headerH))
-            .Concat(HighlightBand(highlights, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, width, hlY, hlBandH))
+            .Concat(HighlightBand(highlights, hlGrid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, width, hlY, hlBandH))
             .Concat(GridBand(regular, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, gridY))
             .Concat(SignatureBand(o, sigFont, width, height, sigY, sigH));
 
@@ -206,7 +214,7 @@ public sealed class ContactSheet
 
     private static IEnumerable<Element> HighlightBand(
         IReadOnlyList<Thumbnail> items,
-        GridSpec grid,
+        GridSpec hlGrid,
         ContactSheetOptions o,
         SKFont tsFont,
         int padding,
@@ -224,9 +232,24 @@ public sealed class ContactSheet
 
         yield return new ColorRect(new SKRect(0, y, width, y + h), o.HighlightBackground);
 
-        foreach (var e in GridBand(items, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, y))
+        int i = 0;
+        for (int row = 0; i < items.Count; row++)
         {
-            yield return e;
+            int itemsInRow = Math.Min(hlGrid.Columns, items.Count - i);
+            float rowW = (itemsInRow * hlGrid.CellW) + ((itemsInRow - 1) * padding);
+            float startX = (width - rowW) / 2f;
+            float rowY = y + hlGrid.Margin + (row * (hlGrid.CellH + padding));
+
+            for (int col = 0; col < itemsInRow; col++, i++)
+            {
+                float cellX = startX + (col * (hlGrid.CellW + padding));
+                float imgX = cellX + polaroidPad;
+                float imgY = rowY + polaroidPad;
+                foreach (var e in ThumbnailElements(items[i], hlGrid, o, tsFont, shadow, polaroidPad, cellX, rowY, imgX, imgY))
+                {
+                    yield return e;
+                }
+            }
         }
     }
 
