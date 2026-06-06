@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VideoContactSheet\VideoContactSheet.csproj" />
+    <PackageReference Include="SkiaSharp" />
     <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Tomlyn" />
   </ItemGroup>
 
   <ItemGroup>

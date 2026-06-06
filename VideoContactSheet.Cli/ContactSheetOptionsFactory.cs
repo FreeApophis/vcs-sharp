@@ -3,20 +3,38 @@ using System.Globalization;
 namespace VideoContactSheet.Cli;
 
 /// <summary>
-/// Translates parsed <see cref="CliSettings"/> into a <see cref="ContactSheetOptions"/>,
-/// starting from library defaults and applying only the values the user actually set.
+/// Translates parsed <see cref="CliSettings"/> and <see cref="VcsConfig"/> into a
+/// <see cref="ContactSheetOptions"/>, starting from library defaults, then layering config,
+/// then CLI args (which always win).
 /// </summary>
 internal static class ContactSheetOptionsFactory
 {
-    public static bool TryCreate(CliSettings settings, out ContactSheetOptions options, out string? error)
+    public static bool TryCreate(CliSettings settings, VcsConfig config, out ContactSheetOptions options, out string? error)
     {
-        var result = new ContactSheetOptions
+        var result = new ContactSheetOptions();
+
+        ApplyConfig(result, config);
+
+        // CLI args override config — only applied when the option was explicitly provided.
+        if (settings.Columns is { } columns)
         {
-            Columns = settings.Columns,
-            Rows = settings.Rows,
-            ThumbnailWidth = settings.Width,
-            Format = Formats.Parse(settings.Format),
-        };
+            result.Columns = columns;
+        }
+
+        if (settings.Rows is { } rows)
+        {
+            result.Rows = rows;
+        }
+
+        if (settings.Width is { } width)
+        {
+            result.ThumbnailWidth = width;
+        }
+
+        if (settings.Format is { } format)
+        {
+            result.Format = Formats.Parse(format);
+        }
 
         if (!TryParseHighlights(settings.HighlightStrings, result, out error))
         {
@@ -80,9 +98,133 @@ internal static class ContactSheetOptionsFactory
         return true;
     }
 
+    /// <summary>Convenience overload used by tests; equivalent to an empty config.</summary>
+    public static bool TryCreate(CliSettings settings, out ContactSheetOptions options, out string? error)
+        => TryCreate(settings, new VcsConfig(), out options, out error);
+
+    private static void ApplyConfig(ContactSheetOptions result, VcsConfig config)
+    {
+        if (config.Main is { } main)
+        {
+            if (main.Columns is { } cols)
+            {
+                result.Columns = cols;
+            }
+
+            if (main.Rows is { } rows)
+            {
+                result.Rows = rows;
+            }
+
+            if (main.Padding is { } pad)
+            {
+                result.Padding = pad;
+            }
+
+            if (main.Quality is { } q)
+            {
+                result.JpegQuality = q;
+            }
+
+            if (main.Width is { } w)
+            {
+                result.ThumbnailWidth = w;
+            }
+
+            if (main.Interval is { } interval && TimeIndex.TryParse(interval, out var ti))
+            {
+                result.Interval = ti;
+            }
+        }
+
+        if (config.Filter is { } filter)
+        {
+            if (filter.Timestamp is { } ts)
+            {
+                result.Timestamp = ts;
+            }
+
+            if (filter.Polaroid is { } pol)
+            {
+                result.Polaroid = pol;
+            }
+
+            if (filter.Shadow is { } shadow)
+            {
+                result.SoftShadow = shadow;
+            }
+
+            if (filter.BlankEvasion is { } be)
+            {
+                result.BlankEvasion = be;
+            }
+
+            if (filter.BlankThreshold is { } bt)
+            {
+                result.BlankThreshold = bt;
+            }
+        }
+
+        if (config.Style is { } style)
+        {
+            ApplyTextStyle(style.Header, result.HeaderStyle);
+            ApplyTextStyle(style.Title, result.TitleStyle);
+            ApplyTextStyle(style.Timestamp, result.TimestampStyle);
+            ApplyTextStyle(style.Signature, result.SignatureStyle);
+
+            if (style.Contact?.Background is { } contactBg && ColorParser.TryParse(contactBg, out var sheetColor))
+            {
+                result.SheetBackground = sheetColor;
+            }
+
+            if (style.Highlight?.Background is { } hlBg && ColorParser.TryParse(hlBg, out var hlColor))
+            {
+                result.HighlightBackground = hlColor;
+            }
+        }
+    }
+
+    private static void ApplyTextStyle(TextStyleConfig? config, TextStyle target)
+    {
+        if (config is null)
+        {
+            return;
+        }
+
+        if (config.Size is { } size)
+        {
+            target.Size = size;
+        }
+
+        if (config.Bold is { } bold)
+        {
+            target.Bold = bold;
+        }
+
+        if (config.FontFamily is { } family)
+        {
+            target.FontFamily = family;
+        }
+
+        if (config.FontFile is { } file)
+        {
+            target.FontFile = file;
+        }
+
+        if (config.Color is { } color && ColorParser.TryParse(color, out var c))
+        {
+            target.Color = c;
+        }
+
+        if (config.Background is { } bg && ColorParser.TryParse(bg, out var bc))
+        {
+            target.Background = bc;
+        }
+    }
+
     /// <summary>
     /// Applies a paired <c>--x</c> / <c>--no-x</c> flag. The negative flag wins, then the
-    /// positive flag; if neither is set the library default is left untouched.
+    /// positive flag; if neither is set the config/library default is left untouched.
     /// </summary>
     private static void ApplyToggle(bool enable, bool disable, Action<bool> set)
     {

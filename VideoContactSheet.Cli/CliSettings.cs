@@ -4,6 +4,7 @@ namespace VideoContactSheet.Cli;
 /// Strongly-typed bag of all CLI values after parsing. Produced by
 /// <see cref="CliOptions.Bind"/> so that the rest of the pipeline never touches
 /// <c>ParseResult</c> directly and can be unit-tested in isolation.
+/// Nullable grid/format fields mean "not explicitly provided — use config/library default".
 /// </summary>
 internal sealed record CliSettings
 {
@@ -17,17 +18,21 @@ internal sealed record CliSettings
 
     public TimeIndex? To { get; init; }
 
-    public int Columns { get; init; }
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? Columns { get; init; }
 
-    public int Rows { get; init; }
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? Rows { get; init; }
 
-    public int Width { get; init; }
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? Width { get; init; }
 
     public int Height { get; init; }
 
     public string? AspectRatio { get; init; }
 
-    public required string Format { get; init; }
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public string? Format { get; init; }
 
     public string? Title { get; init; }
 
@@ -54,4 +59,7 @@ internal sealed record CliSettings
     public bool Quiet { get; init; }
 
     public bool ContinueOnError { get; init; }
+
+    /// <summary>Explicit config file path from <c>--config</c>; null uses auto-discovery only.</summary>
+    public string? ConfigPath { get; init; }
 }

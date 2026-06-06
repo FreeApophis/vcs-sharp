@@ -1,0 +1,52 @@
+# VideoContactSheet configuration file
+# Copy to .vcs.toml in your working directory, or to:
+#   Windows: %APPDATA%\vcs\config.toml
+#   Linux:   ~/.config/vcs/config.toml
+#   macOS:   ~/Library/Application Support/vcs/config.toml
+#
+# All values shown are the built-in defaults.
+# Omit any key to keep its default; the file does not need to be complete.
+
+[main]
+columns = 4       # grid columns
+rows    = 4       # grid rows (ignored when interval is set)
+padding = 8       # pixels between thumbnails
+quality = 95      # JPEG quality (1–100); ignored for PNG and WebP output
+width   = 320     # thumbnail width in pixels
+# interval = "3m30"  # capture one frame every N seconds; overrides rows
+
+[filter]
+timestamp     = true   # draw timestamp badge on each thumbnail
+polaroid      = false  # render thumbnails as polaroid prints
+shadow        = true   # drop shadow behind thumbnails
+blank_evasion = true   # skip near-blank frames and retry nearby offsets
+blank_threshold = 0.08 # mean pixel intensity below which a frame is "blank" (0–1)
+
+[style.contact]
+background = "#ffffff"   # sheet background
+
+[style.highlight]
+background = "#eedd82"   # highlight band background (X11 LightGoldenRod)
+
+[style.header]
+size       = 14
+color      = "#000000"
+background = "#afcd7a"
+# font_family = "DejaVu Sans"   # system font name; default uses bundled DejaVu Sans
+# font_file   = "/path/to/font.ttf"
+# bold        = false
+
+[style.title]
+size       = 33
+color      = "#000000"
+background = "#ffffff"
+
+[style.timestamp]
+size       = 14
+color      = "#ffffff"
+background = "#000000aa"   # semi-transparent black (last two hex digits = alpha)
+
+[style.signature]
+size       = 10
+color      = "#000000"
+background = "#708090"   # X11 SlateGray

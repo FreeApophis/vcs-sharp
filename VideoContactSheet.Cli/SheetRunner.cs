@@ -1,11 +1,22 @@
 namespace VideoContactSheet.Cli;
 
-/// <summary>Drives the actual work: build options from settings, then process each input file.</summary>
+/// <summary>Drives the actual work: load config, build options from settings, then process each input file.</summary>
 internal static class SheetRunner
 {
     public static async Task<int> RunAsync(CliSettings settings, CancellationToken ct)
     {
-        if (!ContactSheetOptionsFactory.TryCreate(settings, out var options, out var error))
+        VcsConfig config;
+        try
+        {
+            config = ConfigLoader.Load(settings.ConfigPath);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Config error: {ex.Message}");
+            return 1;
+        }
+
+        if (!ContactSheetOptionsFactory.TryCreate(settings, config, out var options, out var error))
         {
             Console.Error.WriteLine(error);
             return 1;

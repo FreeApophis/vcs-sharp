@@ -88,7 +88,12 @@ internal sealed class CliOptions
 
     private readonly Option<bool> _noShadow = new("--no-shadow") { Description = "Disable drop shadow." };
 
-    // ── Tool / runtime options ───────────────────────────────────────────────────
+    // ── Config / tool / runtime options ─────────────────────────────────────────
+    private readonly Option<string?> _config = new("--config")
+    {
+        Description = "Path to a TOML config file (layered on top of auto-discovered configs).",
+    };
+
     private readonly Option<string?> _ffmpegFolder = new("--ffmpeg-folder")
     {
         Description = "Folder containing ffmpeg/ffprobe binaries (default: bundled or PATH).",
@@ -111,7 +116,7 @@ internal sealed class CliOptions
             _timestamp, _noTimestamp,
             _polaroid, _noPolaroid,
             _shadow, _noShadow,
-            _ffmpegFolder, _quiet, _continue,
+            _config, _ffmpegFolder, _quiet, _continue,
         };
 
     /// <summary>Projects a parsed command line onto a <see cref="CliSettings"/>.</summary>
@@ -122,12 +127,14 @@ internal sealed class CliOptions
         Interval = parse.GetValue(_interval),
         From = parse.GetValue(_from),
         To = parse.GetValue(_to),
-        Columns = parse.GetValue(_columns),
-        Rows = parse.GetValue(_rows),
-        Width = parse.GetValue(_width),
+
+        // Null when not explicitly provided — factory falls back to config then library defaults.
+        Columns = parse.GetResult(_columns) is not null ? parse.GetValue(_columns) : null,
+        Rows = parse.GetResult(_rows) is not null ? parse.GetValue(_rows) : null,
+        Width = parse.GetResult(_width) is not null ? parse.GetValue(_width) : null,
         Height = parse.GetValue(_height),
         AspectRatio = parse.GetValue(_aspect),
-        Format = parse.GetValue(_format)!,
+        Format = parse.GetResult(_format) is not null ? parse.GetValue(_format) : null,
         Title = parse.GetValue(_title),
         Signature = parse.GetValue(_signature),
         NoSignature = parse.GetValue(_noSignature),
@@ -138,6 +145,7 @@ internal sealed class CliOptions
         NoPolaroid = parse.GetValue(_noPolaroid),
         UseShadow = parse.GetValue(_shadow),
         NoShadow = parse.GetValue(_noShadow),
+        ConfigPath = parse.GetValue(_config),
         FfmpegFolder = parse.GetValue(_ffmpegFolder) ?? BundledBinaries.Detect(),
         Quiet = parse.GetValue(_quiet),
         ContinueOnError = parse.GetValue(_continue),
