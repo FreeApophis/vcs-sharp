@@ -77,13 +77,15 @@ public sealed class ContactSheet
             }
 
             case BitmapEl(var bmp, var dest):
-                canvas.DrawBitmap(bmp, dest);
+                // Thumbnails are captured at display size, so this is a 1:1 copy; Nearest matches
+                // the prior paintless DrawBitmap default (SkiaSharp 4.x deprecated that overload).
+                canvas.DrawBitmap(bmp, dest, new SKSamplingOptions(SKFilterMode.Nearest));
                 break;
 
             case TextEl(var text, var font, var color, var x, var y):
             {
                 using var p = new SKPaint { Color = color, IsAntialias = true };
-                canvas.DrawText(text, x, y, font, p);
+                canvas.DrawText(text, x, y, SKTextAlign.Left, font, p);
                 break;
             }
         }
