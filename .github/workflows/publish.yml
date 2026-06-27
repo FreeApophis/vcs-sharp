@@ -39,12 +39,24 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
 
-      - name: Pack
+      - name: Pack library
         run: >
           dotnet pack VideoContactSheet/VideoContactSheet.csproj
           --configuration Release
           --no-build
           -p:ContinuousIntegrationBuild=true
+          -p:Version=${{ steps.version.outputs.version }}
+          --output ${{ github.workspace }}/artifacts
+
+      # Packed on Linux, so the Windows-only ffmpeg <Content> rule is skipped and the
+      # tool package stays lean. Tool users supply ffmpeg/ffprobe on PATH.
+      - name: Pack CLI tool
+        run: >
+          dotnet pack VideoContactSheet.Cli/VideoContactSheet.Cli.csproj
+          --configuration Release
+          --no-build
+          -p:ContinuousIntegrationBuild=true
+          -p:BundleFfmpeg=false
           -p:Version=${{ steps.version.outputs.version }}
           --output ${{ github.workspace }}/artifacts
 
