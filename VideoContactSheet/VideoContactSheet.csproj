@@ -4,8 +4,22 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageId>VideoContactSheet</PackageId>
     <Version>1.0.0</Version>
+    <Authors>Thomas Bruderer</Authors>
     <Description>Video Contact Sheet generator for .NET. Extracts frames from a video and composes them into a grid (contact sheet) with header, title, timestamps, shadows and polaroid frames. Uses ffmpeg/ffprobe for capture and SkiaSharp for composition.</Description>
+    <PackageTags>video;contact-sheet;thumbnail;ffmpeg;skiasharp;screenshot</PackageTags>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/FreeApophis/vcs-sharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FreeApophis/vcs-sharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FFMpegCore" />
