@@ -1,4 +1,4 @@
-using System.Text;
+using System.Text.Json;
 using Tomlyn;
 
 namespace VideoContactSheet.Cli;
@@ -46,15 +46,16 @@ internal static class ConfigLoader
     private static VcsConfig ParseFile(string path)
     {
         var text = File.ReadAllText(path);
-        var options = new TomlModelOptions
+        var options = new TomlSerializerOptions
         {
-            ConvertPropertyName = ToSnakeCase,
-            IgnoreMissingProperties = true,
+            // Map CLR PascalCase to snake_case TOML keys (e.g. BlankThreshold -> blank_threshold).
+            // Unknown keys are ignored by default in Tomlyn 2.x.
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         };
 
         try
         {
-            return Toml.ToModel<VcsConfig>(text, options: options);
+            return TomlSerializer.Deserialize<VcsConfig>(text, options) ?? new VcsConfig();
         }
         catch (Exception ex)
         {
@@ -133,21 +134,5 @@ internal static class ConfigLoader
         }
 
         return new BackgroundConfig { Background = source.Background ?? target.Background };
-    }
-
-    private static string ToSnakeCase(string name)
-    {
-        var sb = new StringBuilder(name.Length + 4);
-        for (int i = 0; i < name.Length; i++)
-        {
-            if (char.IsUpper(name[i]) && i > 0)
-            {
-                sb.Append('_');
-            }
-
-            sb.Append(char.ToLowerInvariant(name[i]));
-        }
-
-        return sb.ToString();
     }
 }
