@@ -6,6 +6,27 @@
     <RootNamespace>VideoContactSheet.Cli</RootNamespace>
   </PropertyGroup>
 
+  <!-- Distributed as a .NET global tool: `dotnet tool install -g VideoContactSheet.Cli`, run as `vcs`. -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>vcs</ToolCommandName>
+    <PackageId>VideoContactSheet.Cli</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Thomas Bruderer</Authors>
+    <Description>Command-line tool (vcs) for VideoContactSheet: generates contact sheets (frame grids) from video files. Requires ffmpeg/ffprobe on PATH.</Description>
+    <PackageTags>video;contact-sheet;thumbnail;ffmpeg;cli;dotnet-tool</PackageTags>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/FreeApophis/vcs-sharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FreeApophis/vcs-sharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\VideoContactSheet\VideoContactSheet.csproj" />
     <PackageReference Include="SkiaSharp" />
@@ -17,8 +38,13 @@
     <InternalsVisibleTo Include="VideoContactSheet.Test" />
   </ItemGroup>
 
-  <!-- Copy platform-specific ffmpeg binaries into the build output so the CLI works without a global install. -->
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+  <!-- Copy platform-specific ffmpeg binaries into the build output so the CLI works without a global install.
+       BundleFfmpeg defaults true (for dev build/run); the tool-pack steps set it false so the global-tool
+       package stays lean and tool users supply ffmpeg/ffprobe on PATH. -->
+  <PropertyGroup>
+    <BundleFfmpeg Condition="'$(BundleFfmpeg)' == ''">true</BundleFfmpeg>
+  </PropertyGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(BundleFfmpeg)' == 'true'">
     <Content Include="$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\ffmpeg.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg.exe</Link>

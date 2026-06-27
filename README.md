@@ -81,6 +81,12 @@ var bmp = await video.CaptureFrameAsync(TimeIndex.Parse("1:22"), width: 640, eva
 
 ## CLI
 
+Install as a .NET global tool (requires `ffmpeg`/`ffprobe` on `PATH`):
+
+```sh
+dotnet tool install -g VideoContactSheet.Cli
+```
+
 The `vcs` CLI mirrors the original script's options:
 
 ```
