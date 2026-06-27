@@ -15,6 +15,9 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Source Link is built into the .NET SDK; PublishRepositoryUrl above enables it for GitHub.
+         Embed generated/untracked sources (e.g. AssemblyInfo) so step-into debugging never breaks. -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <ItemGroup>
