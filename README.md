@@ -1,5 +1,8 @@
 # VideoContactSheet (.NET)
 
+[![NuGet](https://img.shields.io/nuget/v/VideoContactSheet.svg)](https://www.nuget.org/packages/VideoContactSheet)
+[![CI](https://github.com/FreeApophis/vcs-sharp/actions/workflows/ci.yml/badge.svg)](https://github.com/FreeApophis/vcs-sharp/actions/workflows/ci.yml)
+
 A C# port of [vcs.rb](https://github.com/FreeApophis/vcs.rb) — a **Video Contact Sheet** generator.
 It extracts frames from a video at regular intervals and composes them into a grid ("contact sheet")
 with a metadata header, optional title, per-thumbnail timestamps, drop shadows, polaroid frames,
@@ -10,6 +13,33 @@ and a signature footer.
 - **Composition / drawing**: [SkiaSharp](https://github.com/mono/SkiaSharp) (MIT) — chosen for its
   native drop-shadow, text, and canvas compositing support
 - **Targets**: .NET 10, cross-platform (Windows / Linux / macOS)
+
+## Example
+
+A 4×4 contact sheet with a custom footer:
+
+![Example contact sheet](https://raw.githubusercontent.com/FreeApophis/vcs-sharp/main/docs/example-contact-sheet.png)
+
+```csharp
+using VideoContactSheet;
+
+var video = new Video("ons3on3cup_hdtv.mp4");
+
+var options = new ContactSheetOptions
+{
+    Columns = 4,
+    Rows = 4,
+    Signature = "Made in .NET with VideoContactSheet",
+};
+
+await video.SaveContactSheetAsync("example-contact-sheet.png", options);
+```
+
+Or with the CLI:
+
+```sh
+vcs ons3on3cup_hdtv.mp4 -c 4 -r 4 -s "Made in .NET with VideoContactSheet" -o example-contact-sheet.png
+```
 
 ## Requirements
 
