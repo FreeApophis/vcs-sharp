@@ -8,7 +8,11 @@ on:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -16,6 +20,14 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      # The CLI bundles ffmpeg via a Windows-only Content rule that copies
+      # tools/ffmpeg/win-x64/*.exe (git-ignored). Fetch them so the Windows build
+      # doesn't fail on the missing files. Linux/macOS skip the copy entirely.
+      - name: Download ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tools/download-ffmpeg.ps1
 
       - name: Restore
         run: dotnet restore
