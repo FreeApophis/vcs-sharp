@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel superseded runs on the same branch/PR so quick successive pushes
+# don't pile up across the 3-OS matrix.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     strategy:
@@ -39,8 +45,10 @@ jobs:
       - name: Restore
         run: dotnet restore
 
+      # -warnaserror so new compiler warnings (e.g. API deprecations from a dependency
+      # bump) fail the PR instead of slipping through to a release.
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build --configuration Release --no-restore -warnaserror
 
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
