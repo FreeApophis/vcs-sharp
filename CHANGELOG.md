@@ -25,6 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     dimensions, formats).
   - EXIF orientation is applied, so portrait photos are no longer rendered on their side.
 - Thumbnail captions that are wider than their cell are now ellipsized instead of overflowing.
+- `tools/ffmpeg.json` pins the ffmpeg version, download URL and SHA-256;
+  `tools/download-ffmpeg.ps1` verifies the checksum, skips the download when the pinned version
+  is already present, and takes a `-Platform` argument.
+- CI caches `tools/ffmpeg`, keyed on the manifest.
+
+### Fixed
+
+- A clean checkout without `tools/ffmpeg/win-x64/` no longer fails the CLI build with `MSB3030`.
+  Bundling the binaries is now conditional on their presence; without them the CLI falls back to
+  `ffmpeg`/`ffprobe` on `PATH`, and the build prints how to get them.
 
 ### Changed
 
@@ -42,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   constructor still exists and formats the time index as the caption.
 - `ContactSheetOptions.Timestamp` documents its broader meaning: it toggles the caption overlay
   (time index for video, file name for images).
+- Bundled ffmpeg for local Windows builds is now pinned at 9.0.2 (previously whatever
+  `ffmpeg-release-essentials.zip` resolved to at download time).
 
 ## [1.0.1] - 2026-06-27
 

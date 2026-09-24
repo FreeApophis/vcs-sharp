@@ -1,0 +1,20 @@
+{
+  "comment": [
+    "Pinned ffmpeg build used by tools/download-ffmpeg.ps1 and by the CI cache key.",
+    "Bump 'version', 'url' and 'sha256' together, deliberately: an unpinned download would",
+    "silently change the binaries that capture frames.",
+    "gyan.dev prunes old packages, so a pinned URL eventually 404s - that is a loud failure",
+    "asking for a bump, which is the point.",
+    "License: gyan.dev 'essentials' builds are configured --enable-gpl, so they are GPL-3.0.",
+    "They are downloaded for local builds and CI only, never committed and never redistributed",
+    "in the NuGet packages."
+  ],
+  "version": "9.0.2",
+  "platforms": {
+    "win-x64": {
+      "url": "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-essentials_build.zip",
+      "sha256": "60f467265b1e312373dbcd92200c2618a74850f98d3d078e94296bb3fa2047ba",
+      "binaries": [ "ffmpeg.exe", "ffprobe.exe" ]
+    }
+  }
+}
