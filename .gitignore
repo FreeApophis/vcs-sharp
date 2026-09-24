@@ -23,7 +23,8 @@ build/
 # except build/, which is used as an MSBuild target.
 !**/packages/build/
 
-# ffmpeg/ffprobe binaries (~200 MB each platform) — not committed to git.
-# Run tools/download-ffmpeg.ps1 to populate tools/ffmpeg/ locally.
+# ffmpeg/ffprobe binaries (~200 MB each platform) — not committed to git, and never
+# redistributed in the NuGet packages. Run tools/download-ffmpeg.ps1 to populate
+# tools/ffmpeg/ locally; the version it fetches is pinned in tools/ffmpeg.json.
 tools/ffmpeg/
 /VirtualContactSheet.Cli/Properties/launchSettings.json

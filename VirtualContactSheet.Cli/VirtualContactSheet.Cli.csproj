@@ -40,19 +40,32 @@
 
   <!-- Copy platform-specific ffmpeg binaries into the build output so the CLI works without a global install.
        BundleFfmpeg defaults true (for dev build/run); the tool-pack steps set it false so the global-tool
-       package stays lean and tool users supply ffmpeg/ffprobe on PATH. -->
+       package stays lean and tool users supply ffmpeg/ffprobe on PATH.
+
+       The binaries are git-ignored (see tools/download-ffmpeg.ps1), so each Content item is
+       guarded by Exists(): bundling is an optimization, and a clean checkout must still build.
+       Without them the CLI falls back to ffmpeg/ffprobe on PATH. -->
   <PropertyGroup>
     <BundleFfmpeg Condition="'$(BundleFfmpeg)' == ''">true</BundleFfmpeg>
+    <FfmpegBinaryFolder>$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\</FfmpegBinaryFolder>
   </PropertyGroup>
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(BundleFfmpeg)' == 'true'">
-    <Content Include="$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\ffmpeg.exe">
+    <Content Include="$(FfmpegBinaryFolder)ffmpeg.exe" Condition="Exists('$(FfmpegBinaryFolder)ffmpeg.exe')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffmpeg.exe</Link>
     </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\tools\ffmpeg\win-x64\ffprobe.exe">
+    <Content Include="$(FfmpegBinaryFolder)ffprobe.exe" Condition="Exists('$(FfmpegBinaryFolder)ffprobe.exe')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>ffprobe.exe</Link>
     </Content>
   </ItemGroup>
+
+  <!-- Message, not Warning: CI builds with a bare -warnaserror, which promotes MSBuild warnings
+       to errors and would turn a missing optional download back into a broken build. -->
+  <Target Name="ReportMissingBundledFfmpeg" BeforeTargets="Build"
+          Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(BundleFfmpeg)' == 'true' AND !Exists('$(FfmpegBinaryFolder)ffmpeg.exe')">
+    <Message Importance="high"
+             Text="ffmpeg is not bundled into the output ($(FfmpegBinaryFolder) is empty). Run 'pwsh tools/download-ffmpeg.ps1' to bundle it, or keep ffmpeg/ffprobe on PATH." />
+  </Target>
 
 </Project>
