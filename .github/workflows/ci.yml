@@ -28,8 +28,18 @@ jobs:
           dotnet-version: 10.0.x
 
       # The CLI bundles ffmpeg via a Windows-only Content rule that copies
-      # tools/ffmpeg/win-x64/*.exe (git-ignored). Fetch them so the Windows build
-      # doesn't fail on the missing files. Linux/macOS skip the copy entirely.
+      # tools/ffmpeg/win-x64/*.exe (git-ignored). The build no longer fails without
+      # them, but bundling keeps the Windows job exercising the same layout users get.
+      # Keyed on the manifest, so a version bump invalidates the cache by itself.
+      - name: Cache ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/cache@v6
+        with:
+          path: tools/ffmpeg
+          key: ${{ runner.os }}-ffmpeg-${{ hashFiles('tools/ffmpeg.json') }}
+
+      # No-ops on a cache hit: the script compares tools/ffmpeg/<rid>/.version
+      # against the pinned version before downloading anything.
       - name: Download ffmpeg (Windows)
         if: runner.os == 'Windows'
         shell: pwsh

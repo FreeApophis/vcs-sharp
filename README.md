@@ -72,8 +72,24 @@ rest of the folder dictates — `new SkiaImageLoader(ImageFit.Cover)` crops them
 ## Requirements
 
 - .NET 10 SDK
-- `ffmpeg` and `ffprobe` binaries — only for video; image sheets need neither. The CLI project bundles Windows x64 binaries in its build output automatically (run `tools/download-ffmpeg.ps1` first if they are missing). Alternatively supply `ffBinaryFolder` or put them on `PATH`.
+- `ffmpeg` and `ffprobe` — **only for video**; image sheets need neither
 - On headless Linux, you may also need `libfontconfig1` for text rendering
+
+### Getting ffmpeg
+
+The library never ships ffmpeg: it looks for the binaries on `PATH`, or wherever `ffBinaryFolder`
+points. Any of these works:
+
+| Platform | Install |
+| --- | --- |
+| Windows | `winget install Gyan.FFmpeg`, or `pwsh tools/download-ffmpeg.ps1` for a repo-local copy |
+| Debian/Ubuntu | `apt install ffmpeg` |
+| macOS | `brew install ffmpeg` |
+
+`tools/download-ffmpeg.ps1` fetches the version pinned in `tools/ffmpeg.json`, verifies its
+SHA-256, and drops it in `tools/ffmpeg/win-x64/`, from where the CLI build copies it next to
+`vcs.exe`. That copy is a convenience for local development — the binaries are git-ignored, are
+never published in either NuGet package, and the build works fine without them.
 
 ## Namespaces
 
