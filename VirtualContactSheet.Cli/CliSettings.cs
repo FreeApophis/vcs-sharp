@@ -54,6 +54,15 @@ internal sealed record CliSettings
 
     public bool NoShadow { get; init; }
 
+    /// <summary>Recurse into subfolders of an image folder.</summary>
+    public bool Recursive { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public string? Fit { get; init; }
+
+    /// <summary>Render every image rather than sampling the grid capacity.</summary>
+    public bool AllImages { get; init; }
+
     public string? FfmpegFolder { get; init; }
 
     public bool Quiet { get; init; }

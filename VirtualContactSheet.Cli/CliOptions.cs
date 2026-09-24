@@ -11,7 +11,8 @@ internal sealed class CliOptions
     // ── Positional argument ──────────────────────────────────────────────────────
     private readonly Argument<string[]> _files = new("files")
     {
-        Description = "One or more video files to process.",
+        Description = "Video files, image files, or folders of images. "
+                    + "Each video and each folder produces its own sheet; loose image files are combined into one.",
         Arity = ArgumentArity.OneOrMore,
     };
 
@@ -76,9 +77,12 @@ internal sealed class CliOptions
     };
 
     // ── Style toggles ────────────────────────────────────────────────────────────
-    private readonly Option<bool> _timestamp = new("--timestamp") { Description = "Enable timestamp overlay (default: on)." };
+    private readonly Option<bool> _timestamp = new("--timestamp")
+    {
+        Description = "Enable the caption overlay: timestamp for video, file name for images (default: on).",
+    };
 
-    private readonly Option<bool> _noTimestamp = new("--no-timestamp") { Description = "Disable timestamp overlay." };
+    private readonly Option<bool> _noTimestamp = new("--no-timestamp") { Description = "Disable the caption overlay." };
 
     private readonly Option<bool> _polaroid = new("--polaroid") { Description = "Enable polaroid frame (default: off)." };
 
@@ -87,6 +91,19 @@ internal sealed class CliOptions
     private readonly Option<bool> _shadow = new("--shadow") { Description = "Enable drop shadow (default: on)." };
 
     private readonly Option<bool> _noShadow = new("--no-shadow") { Description = "Disable drop shadow." };
+
+    // ── Image options ────────────────────────────────────────────────────────────
+    private readonly Option<bool> _recursive = new("--recursive")
+    {
+        Description = "Include images in subfolders (image folders only).",
+    };
+
+    private readonly Option<string?> _fit = CreateFitOption();
+
+    private readonly Option<bool> _allImages = new("--all")
+    {
+        Description = "Render every image instead of sampling --columns x --rows of them (image inputs only).",
+    };
 
     // ── Config / tool / runtime options ─────────────────────────────────────────
     private readonly Option<string?> _config = new("--config")
@@ -105,7 +122,7 @@ internal sealed class CliOptions
 
     /// <summary>Builds the root command containing every option declared above.</summary>
     public RootCommand BuildRootCommand()
-        => new("Virtual Contact Sheet — generates frame-grid images from video files.")
+        => new("Virtual Contact Sheet — generates contact sheets from video files or from folders of images.")
         {
             _files,
             _columns, _rows, _width, _height, _aspect,
@@ -116,6 +133,7 @@ internal sealed class CliOptions
             _timestamp, _noTimestamp,
             _polaroid, _noPolaroid,
             _shadow, _noShadow,
+            _recursive, _fit, _allImages,
             _config, _ffmpegFolder, _quiet, _continue,
         };
 
@@ -145,6 +163,9 @@ internal sealed class CliOptions
         NoPolaroid = parse.GetValue(_noPolaroid),
         UseShadow = parse.GetValue(_shadow),
         NoShadow = parse.GetValue(_noShadow),
+        Recursive = parse.GetValue(_recursive),
+        Fit = parse.GetResult(_fit) is not null ? parse.GetValue(_fit) : null,
+        AllImages = parse.GetValue(_allImages),
         ConfigPath = parse.GetValue(_config),
         FfmpegFolder = parse.GetValue(_ffmpegFolder) ?? BundledBinaries.Detect(),
         Quiet = parse.GetValue(_quiet),
@@ -159,6 +180,16 @@ internal sealed class CliOptions
             DefaultValueFactory = _ => "png",
         };
         opt.AcceptOnlyFromAmong(Formats.Accepted);
+        return opt;
+    }
+
+    private static Option<string?> CreateFitOption()
+    {
+        var opt = new Option<string?>("--fit")
+        {
+            Description = "How images that do not match the cell shape are fitted: contain, cover, stretch.",
+        };
+        opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedFits);
         return opt;
     }
 

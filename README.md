@@ -200,16 +200,39 @@ dotnet tool install -g VirtualContactSheet.Cli
 
 The `vcs` CLI mirrors the original script's options:
 
-```
+```sh
 vcs video.avi
 vcs -i 3m30 input.wmv -o output.jpg
 vcs --from 3m --to 18m -i 2m input.avi
 vcs -c 4 -r 5 --polaroid --no-shadow -T "Holiday" clip.mp4
 ```
 
-Run `vcs --help` for the full list. Use `--ffmpeg-folder <dir>` to point at a local copy of the binaries instead of relying on `PATH`.
+It takes images too — pass a folder, or the image files themselves:
 
-The CLI covers video only for now; image contact sheets are available through the library.
+```sh
+vcs holiday/                          # one sheet from the folder -> holiday.png
+vcs holiday/ --recursive --all        # every image, subfolders included
+vcs holiday/ --fit cover -c 5 -r 4    # crop to fill the cells instead of letterboxing
+vcs holiday/*.jpg -o summer.jpg -f jpg
+```
+
+Each video and each folder produces its own sheet; loose image files are combined into a single
+one. Wildcards are expanded by `vcs` itself, so `vcs holiday/*.jpg` behaves the same in cmd and
+PowerShell as it does in a POSIX shell.
+
+| | Video | Images |
+| --- | :---: | :---: |
+| `--columns`, `--rows`, `--width`, `--height`, `--aspect` | ✅ | ✅ |
+| `--format`, `--output`, `--title`, `--signature` | ✅ | ✅ |
+| `--timestamp` (caption: time index / file name) | ✅ | ✅ |
+| `--polaroid`, `--shadow` | ✅ | ✅ |
+| `--interval`, `--from`, `--to`, `--highlight` | ✅ | — |
+| `--recursive`, `--fit`, `--all` | — | ✅ |
+
+Using an option against the wrong kind of input is an error rather than a silent no-op, unless the
+run mixes both — `vcs clip.mp4 holiday/ -i 2m` is fine, and the interval applies to the video.
+
+Run `vcs --help` for the full list. Use `--ffmpeg-folder <dir>` to point at a local copy of the binaries instead of relying on `PATH`; image sheets never invoke ffmpeg at all.
 
 ## Feature mapping vs. vcs.rb
 

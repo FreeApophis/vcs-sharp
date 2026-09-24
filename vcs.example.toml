@@ -13,14 +13,22 @@ rows    = 4       # grid rows (ignored when interval is set)
 padding = 8       # pixels between thumbnails
 quality = 95      # JPEG quality (1–100); ignored for PNG and WebP output
 width   = 320     # thumbnail width in pixels
-# interval = "3m30"  # capture one frame every N seconds; overrides rows
+# interval = "3m30"  # capture one frame every N seconds; overrides rows (video only)
 
 [filter]
-timestamp     = true   # draw timestamp badge on each thumbnail
+timestamp     = true   # draw the caption badge on each thumbnail
+                       # (timestamp for video, file name for images)
 polaroid      = false  # render thumbnails as polaroid prints
 shadow        = true   # drop shadow behind thumbnails
-blank_evasion = true   # skip near-blank frames and retry nearby offsets
-blank_threshold = 0.08 # mean pixel intensity below which a frame is "blank" (0–1)
+blank_evasion = true   # skip near-blank frames and retry nearby offsets (video only)
+blank_threshold = 0.08 # mean pixel intensity below which a frame is "blank" (0–1), video only
+
+# Image inputs only; ignored for video.
+[image]
+fit       = "contain"  # how an image that does not match the cell shape is fitted:
+                       # contain (letterbox), cover (crop), stretch (distort)
+recursive = false      # include images in subfolders of an image folder
+all       = false      # render every image instead of sampling columns x rows of them
 
 [style.contact]
 background = "#ffffff"   # sheet background
