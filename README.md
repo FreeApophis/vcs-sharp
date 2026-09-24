@@ -66,6 +66,12 @@ var options = new ContactSheetOptions
 await photos.SaveContactSheetAsync("example-image-contact-sheet.jpg", options);
 ```
 
+Or with the CLI:
+
+```sh
+vcs holiday -c 4 -r 4 -s "Made in .NET with VirtualContactSheet" -f jpg -o example-image-contact-sheet.jpg
+```
+
 Cells are a uniform size, so the two portrait shots are letterboxed into the landscape cell the
 rest of the folder dictates — `new SkiaImageLoader(ImageFit.Cover)` crops them to fill instead.
 
