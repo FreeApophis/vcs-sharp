@@ -3,10 +3,10 @@
   <PropertyGroup>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageId>VirtualContactSheet</PackageId>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <Authors>Thomas Bruderer</Authors>
-    <Description>Virtual Contact Sheet generator for .NET. Extracts frames from a video and composes them into a grid (contact sheet) with header, title, timestamps, shadows and polaroid frames. Uses ffmpeg/ffprobe for capture and SkiaSharp for composition.</Description>
-    <PackageTags>video;contact-sheet;thumbnail;ffmpeg;skiasharp;screenshot</PackageTags>
+    <Description>Contact sheet generator for .NET. Composes a grid of thumbnails - either frames extracted from a video, or the images in a folder or list - with a metadata header, title, per-thumbnail captions, drop shadows and polaroid frames. SkiaSharp does the composition; ffmpeg/ffprobe are used for video capture only, so image contact sheets need neither.</Description>
+    <PackageTags>contact-sheet;video;image;photo;thumbnail;grid;ffmpeg;skiasharp;screenshot</PackageTags>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/FreeApophis/vcs-sharp</PackageProjectUrl>

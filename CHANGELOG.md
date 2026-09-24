@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-24
+
+The project is renamed, and with it the NuGet packages: `VideoContactSheet` becomes
+`VirtualContactSheet`, and `VideoContactSheet.Cli` becomes `VirtualContactSheet.Cli`. The old
+package IDs stop at 1.0.1 — nothing upgrades in place, so update the `PackageReference` (and, for
+the tool, uninstall the old one first: both install a command called `vcs`).
+
+```sh
+dotnet tool uninstall -g VideoContactSheet.Cli
+dotnet tool install -g VirtualContactSheet.Cli
+```
+
+The rename is not cosmetic: the library now generates contact sheets from images as well as video.
+
 ### Added
 
 - **Image contact sheets from the CLI.** `vcs` now accepts folders and image files alongside
@@ -91,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `vcs` CLI with TOML configuration.
 - DejaVu Sans embedded in the library for identical text rendering on every platform.
 
-[Unreleased]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/FreeApophis/vcs-sharp/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/FreeApophis/vcs-sharp/releases/tag/v1.0.0
