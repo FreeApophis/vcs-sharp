@@ -1,0 +1,212 @@
+using SkiaSharp;
+
+namespace VirtualContactSheet;
+
+/// <summary>
+/// Top-level entry point. Wraps a video file and produces contact sheets or single frames.
+/// </summary>
+public sealed class Video
+{
+    private readonly IFrameCapturer _capturer;
+
+    private readonly IVideoInfoProvider _probe;
+
+    private VideoInfo? _info;
+
+    public string Path { get; }
+
+    public Video(
+        string path,
+        IFrameCapturer? capturer = null,
+        IVideoInfoProvider? probe = null,
+        string? ffBinaryFolder = null)
+    {
+        Path = path ?? throw new ArgumentNullException(nameof(path));
+        _capturer = capturer ?? new FfmpegCapturer(ffBinaryFolder);
+        _probe = probe ?? new FfprobeVideoInfoProvider(ffBinaryFolder);
+    }
+
+    /// <summary>Probe and cache the video's metadata.</summary>
+    public async Task<VideoInfo> GetInfoAsync(CancellationToken ct = default)
+        => _info ??= await _probe.ProbeAsync(Path, ct).ConfigureAwait(false);
+
+    public async Task<bool> IsValidAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var info = await GetInfoAsync(ct).ConfigureAwait(false);
+            return info.Duration > TimeSpan.Zero && info.VideoStreams.Count > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Capture a single frame, with optional blank-frame evasion.</summary>
+    public async Task<SKBitmap> CaptureFrameAsync(
+        TimeIndex time,
+        int width,
+        int height = 0,
+        bool evadeBlank = false,
+        double blankThreshold = 0.08,
+        IReadOnlyList<int>? alternatives = null,
+        CancellationToken ct = default)
+    {
+        var info = await GetInfoAsync(ct).ConfigureAwait(false);
+        var bitmap = await _capturer.CaptureAsync(Path, time, width, height, ct).ConfigureAwait(false);
+
+        if (!evadeBlank || FrameAnalysis.AverageBrightness(bitmap) >= blankThreshold)
+        {
+            return bitmap;
+        }
+
+        // Try nearby offsets to dodge a blank/black frame.
+        foreach (var offset in alternatives ?? [-5, 5, -10, 10, -30, 30])
+        {
+            ct.ThrowIfCancellationRequested();
+            var alt = new TimeIndex(time.TotalSeconds + offset);
+            if (alt.TotalSeconds < 0 || alt.Value > info.Duration)
+            {
+                continue;
+            }
+
+            var candidate = await _capturer.CaptureAsync(Path, alt, width, height, ct).ConfigureAwait(false);
+            if (FrameAnalysis.AverageBrightness(candidate) >= blankThreshold)
+            {
+                bitmap.Dispose();
+                return candidate;
+            }
+
+            candidate.Dispose();
+        }
+
+        return bitmap;
+    }
+
+    /// <summary>Compute the time indices for the grid based on options.</summary>
+    public IReadOnlyList<TimeIndex> ComputeTimes(VideoInfo info, ContactSheetOptions options)
+    {
+        var from = options.From?.Value ?? TimeSpan.Zero;
+        var to = options.To?.Value ?? info.Duration;
+        if (to <= from)
+        {
+            to = info.Duration;
+        }
+
+        var span = to - from;
+        var times = new List<TimeIndex>();
+
+        if (options.Interval is { } interval && interval.TotalSeconds > 0)
+        {
+            for (var t = from; t < to; t += interval.Value)
+            {
+                times.Add(new TimeIndex(t));
+            }
+        }
+        else
+        {
+            int count = Math.Max(1, options.Columns * options.Rows);
+
+            // Evenly distribute, sampling at the middle of each segment.
+            for (int i = 0; i < count; i++)
+            {
+                double fraction = (i + 0.5) / count;
+                times.Add(new TimeIndex(from + TimeSpan.FromSeconds(span.TotalSeconds * fraction)));
+            }
+        }
+
+        return times;
+    }
+
+    /// <summary>Build the contact sheet and return encoded image bytes.</summary>
+    public async Task<byte[]> BuildContactSheetAsync(
+        ContactSheetOptions options,
+        IProgress<double>? progress = null,
+        CancellationToken ct = default)
+    {
+        var info = await GetInfoAsync(ct).ConfigureAwait(false);
+        if (info.VideoStreams.Count == 0)
+        {
+            throw new CaptureException("No video stream found.");
+        }
+
+        var times = ComputeTimes(info, options);
+        var thumbs = new List<ContactSheet.Thumbnail>();
+
+        // Resolve capture height: AspectRatio wins over ThumbnailHeight; 0 means ffmpeg auto-scales.
+        int captureHeight;
+        if (options.AspectRatio > 0)
+        {
+            captureHeight = (int)Math.Round(options.ThumbnailWidth / (double)options.AspectRatio);
+            if (captureHeight % 2 != 0)
+            {
+                captureHeight++;
+            }
+        }
+        else
+        {
+            captureHeight = options.ThumbnailHeight;
+        }
+
+        int total = options.Highlights.Count + times.Count;
+        int done = 0;
+
+        foreach (var h in options.Highlights)
+        {
+            ct.ThrowIfCancellationRequested();
+            var bmp = await CaptureFrameAsync(
+                h,
+                options.ThumbnailWidth,
+                captureHeight,
+                options.BlankEvasion,
+                options.BlankThreshold,
+                options.BlankAlternatives,
+                ct).ConfigureAwait(false);
+            thumbs.Add(new ContactSheet.Thumbnail(bmp, h, IsHighlight: true));
+            progress?.Report(++done / (double)total);
+        }
+
+        foreach (var t in times)
+        {
+            ct.ThrowIfCancellationRequested();
+            var bmp = await CaptureFrameAsync(
+                t,
+                options.ThumbnailWidth,
+                captureHeight,
+                options.BlankEvasion,
+                options.BlankThreshold,
+                options.BlankAlternatives,
+                ct).ConfigureAwait(false);
+            thumbs.Add(new ContactSheet.Thumbnail(bmp, t));
+            progress?.Report(++done / (double)total);
+        }
+
+        try
+        {
+            var sheet = new ContactSheet(options)
+            {
+                HeaderOverride = HeaderBuilder.Build(System.IO.Path.GetFileName(Path), info),
+            };
+            return sheet.Render(thumbs, options.Title);
+        }
+        finally
+        {
+            foreach (var th in thumbs)
+            {
+                th.Image.Dispose();
+            }
+        }
+    }
+
+    /// <summary>Build a contact sheet and write it to disk.</summary>
+    public async Task SaveContactSheetAsync(
+        string outputPath,
+        ContactSheetOptions options,
+        IProgress<double>? progress = null,
+        CancellationToken ct = default)
+    {
+        var bytes = await BuildContactSheetAsync(options, progress, ct).ConfigureAwait(false);
+        await File.WriteAllBytesAsync(outputPath, bytes, ct).ConfigureAwait(false);
+    }
+}

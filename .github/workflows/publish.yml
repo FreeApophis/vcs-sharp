@@ -41,7 +41,7 @@ jobs:
 
       - name: Pack library
         run: >
-          dotnet pack VideoContactSheet/VideoContactSheet.csproj
+          dotnet pack VirtualContactSheet/VirtualContactSheet.csproj
           --configuration Release
           --no-build
           -p:ContinuousIntegrationBuild=true
@@ -52,7 +52,7 @@ jobs:
       # tool package stays lean. Tool users supply ffmpeg/ffprobe on PATH.
       - name: Pack CLI tool
         run: >
-          dotnet pack VideoContactSheet.Cli/VideoContactSheet.Cli.csproj
+          dotnet pack VirtualContactSheet.Cli/VirtualContactSheet.Cli.csproj
           --configuration Release
           --no-build
           -p:ContinuousIntegrationBuild=true

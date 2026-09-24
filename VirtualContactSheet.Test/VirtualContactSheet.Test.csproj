@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!-- Test fixtures synthesize SkiaSharp bitmaps and hand ownership to Thumbnail/Render
+         (which dispose them); the IDisposable analyzers can't track that transfer. -->
+    <NoWarn>$(NoWarn);IDISP001;IDISP003;IDISP004</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Verify.Xunit" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VirtualContactSheet.Cli\VirtualContactSheet.Cli.csproj" />
+    <ProjectReference Include="..\VirtualContactSheet\VirtualContactSheet.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+    <Using Include="SkiaSharp" />
+    <Using Include="VirtualContactSheet" />
+    <Using Include="VerifyXunit" />
+    <Using Include="VerifyTests" />
+    <Using Include="VerifyXunit.Verifier" Static="true" />
+  </ItemGroup>
+
+</Project>
