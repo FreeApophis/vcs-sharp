@@ -1,4 +1,4 @@
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>Provides container-level metadata (duration, streams, size) for a video file.</summary>
 public interface IVideoInfoProvider

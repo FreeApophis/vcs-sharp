@@ -1,6 +1,6 @@
 using SkiaSharp;
 
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>Utility to measure average brightness, used for blank-frame evasion.</summary>
 public static class FrameAnalysis

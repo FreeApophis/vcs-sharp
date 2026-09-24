@@ -1,6 +1,6 @@
 using SkiaSharp;
 
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>Extracts single frames from a video at a given time index.</summary>
 public interface IFrameCapturer

@@ -1,10 +1,10 @@
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>
 /// Builds the two-column metadata header, mirroring the original vcs.rb layout:
 /// left column = filename / file size / length, right column = dimensions / format / fps.
 /// </summary>
-public static class HeaderBuilder
+public static class VideoHeaderBuilder
 {
     public static HeaderColumns Build(string fileName, VideoInfo info)
         => new(LeftColumn(fileName, info), RightColumn(info));

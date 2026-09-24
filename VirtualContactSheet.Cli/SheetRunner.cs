@@ -1,3 +1,5 @@
+using VirtualContactSheet.VideoProcessing;
+
 namespace VirtualContactSheet.Cli;
 
 /// <summary>Drives the actual work: load config, build options from settings, then process each input file.</summary>

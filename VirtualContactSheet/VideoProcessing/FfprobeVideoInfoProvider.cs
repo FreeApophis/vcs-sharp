@@ -1,6 +1,6 @@
 using FFMpegCore;
 
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>Probes a video file's metadata using ffprobe via FFMpegCore.</summary>
 public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
