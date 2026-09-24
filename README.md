@@ -69,6 +69,35 @@ await photos.SaveContactSheetAsync("example-image-contact-sheet.jpg", options);
 Cells are a uniform size, so the two portrait shots are letterboxed into the landscape cell the
 rest of the folder dictates — `new SkiaImageLoader(ImageFit.Cover)` crops them to fill instead.
 
+## Upgrading from VideoContactSheet
+
+The project was renamed in 2.0.0, and so were the packages. `VideoContactSheet` stops at 1.0.1;
+nothing upgrades in place.
+
+| Was | Now |
+| --- | --- |
+| `VideoContactSheet` | `VirtualContactSheet` |
+| `VideoContactSheet.Cli` | `VirtualContactSheet.Cli` |
+
+Both CLI packages install a command called `vcs`, so uninstall the old tool before installing the
+new one:
+
+```sh
+dotnet tool uninstall -g VideoContactSheet.Cli
+dotnet tool install -g VirtualContactSheet.Cli
+```
+
+In library code, video types moved to their own namespace, so add one `using`:
+
+```csharp
+using VirtualContactSheet;
+using VirtualContactSheet.VideoProcessing;   // Video, VideoInfo, IFrameCapturer, ...
+```
+
+`HeaderBuilder` is now `VideoHeaderBuilder`, and `ContactSheet.Thumbnail` carries a
+`string? Caption` instead of a `TimeIndex` — the `Thumbnail(SKBitmap, TimeIndex, bool)`
+constructor still exists and formats the timestamp for you. See [CHANGELOG.md](CHANGELOG.md).
+
 ## Requirements
 
 - .NET 10 SDK
