@@ -47,19 +47,27 @@ vcs ons3on3cup_hdtv.mp4 -c 4 -r 4 -s "Made in .NET with VirtualContactSheet" -o 
 
 The same thing from a folder of photos, no ffmpeg involved:
 
+![Example image contact sheet](https://raw.githubusercontent.com/FreeApophis/vcs-sharp/main/docs/example-image-contact-sheet.jpg)
+
 ```csharp
 using VirtualContactSheet;
 using VirtualContactSheet.ImageProcessing;
 
-var photos = ImageCollection.FromFolder("holiday-2026");
+var photos = ImageCollection.FromFolder("holiday");
 
-await photos.SaveContactSheetAsync("contact-sheet.png", new ContactSheetOptions
+var options = new ContactSheetOptions
 {
     Columns = 4,
     Rows = 4,
-    Title = "Holiday 2026",
-});
+    Signature = "Made in .NET with VirtualContactSheet",
+    Format = SheetFormat.Jpg,
+};
+
+await photos.SaveContactSheetAsync("example-image-contact-sheet.jpg", options);
 ```
+
+Cells are a uniform size, so the two portrait shots are letterboxed into the landscape cell the
+rest of the folder dictates — `new SkiaImageLoader(ImageFit.Cover)` crops them to fill instead.
 
 ## Requirements
 
@@ -184,6 +192,8 @@ vcs -c 4 -r 5 --polaroid --no-shadow -T "Holiday" clip.mp4
 ```
 
 Run `vcs --help` for the full list. Use `--ffmpeg-folder <dir>` to point at a local copy of the binaries instead of relying on `PATH`.
+
+The CLI covers video only for now; image contact sheets are available through the library.
 
 ## Feature mapping vs. vcs.rb
 
