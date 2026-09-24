@@ -86,6 +86,14 @@ internal static class ConfigLoader
             target.Filter.BlankThreshold = filter.BlankThreshold ?? target.Filter.BlankThreshold;
         }
 
+        if (source.Image is { } image)
+        {
+            target.Image ??= new();
+            target.Image.Fit = image.Fit ?? target.Image.Fit;
+            target.Image.Recursive = image.Recursive ?? target.Image.Recursive;
+            target.Image.All = image.All ?? target.Image.All;
+        }
+
         if (source.Style is { } style)
         {
             target.Style ??= new();

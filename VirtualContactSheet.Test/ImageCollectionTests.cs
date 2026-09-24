@@ -116,19 +116,17 @@ public class ImageCollectionTests
     public async Task BuildContactSheet_ReportsProgressOncePerImage()
     {
         var collection = Fake(["a.png", "b.png", "c.png", "d.png"]);
-        var reported = new List<double>();
 
-        await collection.BuildContactSheetAsync(TextFreeOptions(), new Progress<double>(reported.Add));
+        // A synchronous IProgress, not Progress<T>: the latter posts to the synchronization
+        // context, so reports can still be in flight when the build returns. That is an artifact
+        // of the reporting type, not of the library, and waiting for them made this test flaky
+        // on a loaded runner.
+        var reported = new RecordingProgress();
 
-        // Progress<T> posts asynchronously, so wait for the last report to land.
-        var deadline = DateTime.UtcNow.AddSeconds(5);
-        while (reported.Count < 4 && DateTime.UtcNow < deadline)
-        {
-            await Task.Delay(10);
-        }
+        await collection.BuildContactSheetAsync(TextFreeOptions(), reported);
 
-        Assert.Equal(4, reported.Count);
-        Assert.Equal(1.0, reported[^1], precision: 6);
+        Assert.Equal(4, reported.Values.Count);
+        Assert.Equal([0.25, 0.5, 0.75, 1.0], reported.Values);
     }
 
     [Fact]

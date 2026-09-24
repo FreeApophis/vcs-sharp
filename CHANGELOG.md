@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Image contact sheets from the CLI.** `vcs` now accepts folders and image files alongside
+  videos, detected from the input itself: a directory or a known image extension makes an image
+  sheet, anything else stays video. Each video and each folder produces its own sheet; loose image
+  files are combined into one.
+  - `--recursive`, `--fit <contain|cover|stretch>` and `--all`, mirroring the library knobs, plus
+    an `[image]` section in the TOML config.
+  - Wildcards are expanded by the CLI, so `vcs holiday/*.jpg` works the same in cmd and PowerShell
+    as in a POSIX shell.
+  - An option that cannot apply to the given inputs is an error rather than a silent no-op —
+    unless the run mixes both kinds, where each option applies to the inputs it belongs to.
+
 - **Image contact sheets.** New `ImageCollection` type in `VirtualContactSheet.ImageProcessing`,
   the counterpart of `Video`: build it from a folder (`ImageCollection.FromFolder`) or an explicit
   list of files (`ImageCollection.FromFiles`), then call the same

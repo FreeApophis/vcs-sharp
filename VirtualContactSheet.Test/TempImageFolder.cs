@@ -56,6 +56,18 @@ internal sealed class FakeImageLoader : IImageLoader
     }
 }
 
+/// <summary>
+/// Collects progress reports on the calling thread. Unlike <see cref="Progress{T}"/> it does not
+/// post to a synchronization context, so every report has landed by the time the awaited call
+/// returns and assertions need no waiting.
+/// </summary>
+internal sealed class RecordingProgress : IProgress<double>
+{
+    public List<double> Values { get; } = [];
+
+    public void Report(double value) => Values.Add(value);
+}
+
 /// <summary>An <see cref="IImageInfoProvider"/> returning fixed metadata without reading files.</summary>
 internal sealed class FakeImageProbe : IImageInfoProvider
 {

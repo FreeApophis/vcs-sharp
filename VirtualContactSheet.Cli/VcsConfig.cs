@@ -7,6 +7,18 @@ internal sealed class VcsConfig
     public FilterConfig? Filter { get; set; }
 
     public StyleConfig? Style { get; set; }
+
+    public ImageConfig? Image { get; set; }
+}
+
+/// <summary>The <c>[image]</c> section: settings that only apply to image collections.</summary>
+internal sealed class ImageConfig
+{
+    public string? Fit { get; set; }
+
+    public bool? Recursive { get; set; }
+
+    public bool? All { get; set; }
 }
 
 internal sealed class MainConfig
