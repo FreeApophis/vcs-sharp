@@ -1,4 +1,4 @@
-# VideoContactSheet configuration file
+# VirtualContactSheet configuration file
 # Copy to .vcs.toml in your working directory, or to:
 #   Windows: %APPDATA%\vcs\config.toml
 #   Linux:   ~/.config/vcs/config.toml

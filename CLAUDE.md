@@ -1,4 +1,4 @@
-# VideoContactSheet
+# VirtualContactSheet
 
 A C# port of [vcs.rb](https://github.com/FreeApophis/vcs.rb) — generates contact sheets (frame grids) from video files using ffmpeg/ffprobe for capture and SkiaSharp for composition.
 
@@ -7,7 +7,7 @@ A C# port of [vcs.rb](https://github.com/FreeApophis/vcs.rb) — generates conta
 ```
 dotnet build
 dotnet test
-dotnet run --project VideoContactSheet.Cli -- <video> [options]
+dotnet run --project VirtualContactSheet.Cli -- <video> [options]
 ```
 
 The CLI binary is named `vcs`.
@@ -16,9 +16,9 @@ The CLI binary is named `vcs`.
 
 | Project | Purpose |
 |---|---|
-| `VideoContactSheet/` | Core library (NuGet-packageable) |
-| `VideoContactSheet.Cli/` | CLI front-end (`vcs` binary) |
-| `VideoContactSheet.Test/` | xUnit test project |
+| `VirtualContactSheet/` | Core library (NuGet-packageable) |
+| `VirtualContactSheet.Cli/` | CLI front-end (`vcs` binary) |
+| `VirtualContactSheet.Test/` | xUnit test project |
 
 Key source files in the library:
 
@@ -36,7 +36,7 @@ Key source files in the library:
 
 ## Runtime dependencies / bundled ffmpeg
 
-`ffmpeg 8.1.1` binaries (Windows x64) live in `tools/ffmpeg/win-x64/` and are copied to the CLI build output by `VideoContactSheet.Cli.csproj` via a Windows-conditional `<Content>` rule. The CLI auto-detects them on startup, so no global PATH install is needed.
+`ffmpeg 8.1.1` binaries (Windows x64) live in `tools/ffmpeg/win-x64/` and are copied to the CLI build output by `VirtualContactSheet.Cli.csproj` via a Windows-conditional `<Content>` rule. The CLI auto-detects them on startup, so no global PATH install is needed.
 
 The binaries are git-ignored (~97 MB each). Other developers or CI reproduce them with:
 ```
@@ -53,7 +53,7 @@ To add Linux/macOS support: download the respective platform builds, put them in
 ## Bundled font
 
 DejaVu Sans (regular + bold) is embedded in the core library as assembly resources
-(`VideoContactSheet/Fonts/*.ttf`, `<EmbeddedResource>` in the `.csproj`; license in
+(`VirtualContactSheet/Fonts/*.ttf`, `<EmbeddedResource>` in the `.csproj`; license in
 `Fonts/LICENSE`). `BundledFonts` loads them once (cached `SKTypeface`), and `ContactSheet.CreateFont`
 uses them by default — matching the original vcs.rb and making text render identically on every
 platform. Per-`TextStyle` `FontFile` (path) or `FontFamily` (system font name) still override it.

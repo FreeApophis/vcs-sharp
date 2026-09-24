@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>VirtualContactSheet</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Thomas Bruderer</Authors>
+    <Description>Virtual Contact Sheet generator for .NET. Extracts frames from a video and composes them into a grid (contact sheet) with header, title, timestamps, shadows and polaroid frames. Uses ffmpeg/ffprobe for capture and SkiaSharp for composition.</Description>
+    <PackageTags>video;contact-sheet;thumbnail;ffmpeg;skiasharp;screenshot</PackageTags>
+    <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/FreeApophis/vcs-sharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FreeApophis/vcs-sharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Source Link is built into the .NET SDK; PublishRepositoryUrl above enables it for GitHub.
+         Embed generated/untracked sources (e.g. AssemblyInfo) so step-into debugging never breaks. -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FFMpegCore" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+  </ItemGroup>
+
+  <!-- DejaVu Sans (regular + bold) is embedded so the library renders identical text on every
+       platform without depending on installed system fonts. License: Fonts/LICENSE. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Fonts\DejaVuSans.ttf" />
+    <EmbeddedResource Include="Fonts\DejaVuSans-Bold.ttf" />
+  </ItemGroup>
+
+</Project>

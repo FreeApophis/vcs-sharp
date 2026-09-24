@@ -1,12 +1,12 @@
-# VideoContactSheet (.NET)
+# VirtualContactSheet (.NET)
 
-[![NuGet](https://img.shields.io/nuget/v/VideoContactSheet.svg)](https://www.nuget.org/packages/VideoContactSheet)
+[![NuGet](https://img.shields.io/nuget/v/VirtualContactSheet.svg)](https://www.nuget.org/packages/VirtualContactSheet)
 [![CI](https://github.com/FreeApophis/vcs-sharp/actions/workflows/ci.yml/badge.svg)](https://github.com/FreeApophis/vcs-sharp/actions/workflows/ci.yml)
 
-A C# port of [vcs.rb](https://github.com/FreeApophis/vcs.rb) — a **Video Contact Sheet** generator.
-It extracts frames from a video at regular intervals and composes them into a grid ("contact sheet")
-with a metadata header, optional title, per-thumbnail timestamps, drop shadows, polaroid frames,
-and a signature footer.
+**Virtual Contact Sheet** — a contact-sheet generator, originally a C# port of
+[vcs.rb](https://github.com/FreeApophis/vcs.rb). It extracts frames from a video at regular intervals
+and composes them into a grid ("contact sheet") with a metadata header, optional title,
+per-thumbnail timestamps, drop shadows, polaroid frames, and a signature footer.
 
 - **Frame capture & metadata**: [FFMpegCore](https://github.com/rosenbjerg/FFMpegCore) — wraps
   `ffmpeg` / `ffprobe`; binaries can be on `PATH` or pointed to via `ffBinaryFolder`
@@ -21,7 +21,7 @@ A 4×4 contact sheet with a custom footer:
 ![Example contact sheet](https://raw.githubusercontent.com/FreeApophis/vcs-sharp/main/docs/example-contact-sheet.png)
 
 ```csharp
-using VideoContactSheet;
+using VirtualContactSheet;
 
 var video = new Video("ons3on3cup_hdtv.mp4");
 
@@ -29,7 +29,7 @@ var options = new ContactSheetOptions
 {
     Columns = 4,
     Rows = 4,
-    Signature = "Made in .NET with VideoContactSheet",
+    Signature = "Made in .NET with VirtualContactSheet",
 };
 
 await video.SaveContactSheetAsync("example-contact-sheet.png", options);
@@ -38,7 +38,7 @@ await video.SaveContactSheetAsync("example-contact-sheet.png", options);
 Or with the CLI:
 
 ```sh
-vcs ons3on3cup_hdtv.mp4 -c 4 -r 4 -s "Made in .NET with VideoContactSheet" -o example-contact-sheet.png
+vcs ons3on3cup_hdtv.mp4 -c 4 -r 4 -s "Made in .NET with VirtualContactSheet" -o example-contact-sheet.png
 ```
 
 ## Requirements
@@ -50,7 +50,7 @@ vcs ons3on3cup_hdtv.mp4 -c 4 -r 4 -s "Made in .NET with VideoContactSheet" -o ex
 ## Library usage
 
 ```csharp
-using VideoContactSheet;
+using VirtualContactSheet;
 
 // ffmpeg/ffprobe on PATH:
 var video = new Video("movie.mkv");
@@ -84,7 +84,7 @@ var bmp = await video.CaptureFrameAsync(TimeIndex.Parse("1:22"), width: 640, eva
 Install as a .NET global tool (requires `ffmpeg`/`ffprobe` on `PATH`):
 
 ```sh
-dotnet tool install -g VideoContactSheet.Cli
+dotnet tool install -g VirtualContactSheet.Cli
 ```
 
 The `vcs` CLI mirrors the original script's options:
