@@ -2,7 +2,7 @@ using FFMpegCore;
 using FFMpegCore.Pipes;
 using SkiaSharp;
 
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>Frame capturer backed by FFMpegCore. Pipes one PNG frame to memory and decodes it with SkiaSharp.</summary>
 public sealed class FfmpegCapturer : IFrameCapturer

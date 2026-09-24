@@ -1,6 +1,6 @@
 using SkiaSharp;
 
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>
 /// Top-level entry point. Wraps a video file and produces contact sheets or single frames.
@@ -163,7 +163,7 @@ public sealed class Video
                 options.BlankThreshold,
                 options.BlankAlternatives,
                 ct).ConfigureAwait(false);
-            thumbs.Add(new ContactSheet.Thumbnail(bmp, h, IsHighlight: true));
+            thumbs.Add(new ContactSheet.Thumbnail(bmp, h.ToTimestamp(), IsHighlight: true));
             progress?.Report(++done / (double)total);
         }
 
@@ -178,7 +178,7 @@ public sealed class Video
                 options.BlankThreshold,
                 options.BlankAlternatives,
                 ct).ConfigureAwait(false);
-            thumbs.Add(new ContactSheet.Thumbnail(bmp, t));
+            thumbs.Add(new ContactSheet.Thumbnail(bmp, t.ToTimestamp()));
             progress?.Report(++done / (double)total);
         }
 
@@ -186,7 +186,7 @@ public sealed class Video
         {
             var sheet = new ContactSheet(options)
             {
-                HeaderOverride = HeaderBuilder.Build(System.IO.Path.GetFileName(Path), info),
+                HeaderOverride = VideoHeaderBuilder.Build(System.IO.Path.GetFileName(Path), info),
             };
             return sheet.Render(thumbs, options.Title);
         }

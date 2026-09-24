@@ -1,4 +1,4 @@
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 /// <summary>Container-level metadata for a video file.</summary>
 public sealed class VideoInfo

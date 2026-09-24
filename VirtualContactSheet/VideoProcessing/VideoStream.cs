@@ -1,4 +1,4 @@
-namespace VirtualContactSheet;
+namespace VirtualContactSheet.VideoProcessing;
 
 public sealed class VideoStream
 {

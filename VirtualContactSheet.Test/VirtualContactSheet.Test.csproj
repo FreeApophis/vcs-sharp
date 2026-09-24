@@ -24,6 +24,8 @@
     <Using Include="Xunit" />
     <Using Include="SkiaSharp" />
     <Using Include="VirtualContactSheet" />
+    <Using Include="VirtualContactSheet.VideoProcessing" />
+    <Using Include="VirtualContactSheet.ImageProcessing" />
     <Using Include="VerifyXunit" />
     <Using Include="VerifyTests" />
     <Using Include="VerifyXunit.Verifier" Static="true" />

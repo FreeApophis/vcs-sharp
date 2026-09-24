@@ -2,7 +2,11 @@ using SkiaSharp;
 
 namespace VirtualContactSheet;
 
-/// <summary>Styling for a single text region (header, title, timestamp, signature).</summary>
+/// <summary>
+/// Every grid, style and filter setting for a contact sheet. Shared by video and image
+/// collections; the time-based settings (<see cref="Interval"/>, <see cref="From"/>,
+/// <see cref="To"/>, <see cref="Highlights"/>, the blank-frame evasion block) only apply to video.
+/// </summary>
 public sealed class ContactSheetOptions
 {
     // ---- Grid ----
@@ -46,6 +50,11 @@ public sealed class ContactSheetOptions
     public bool ShowHeader { get; set; } = true;
 
     // ---- Filters ----
+
+    /// <summary>
+    /// Draw the per-thumbnail caption overlay: the time index for video frames, the file name
+    /// for images.
+    /// </summary>
     public bool Timestamp { get; set; } = true;
 
     public bool Polaroid { get; set; }

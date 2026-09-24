@@ -9,7 +9,18 @@ public sealed class ContactSheet
 
     public ContactSheet(ContactSheetOptions options) => _options = options;
 
-    public sealed record Thumbnail(SKBitmap Image, TimeIndex Time, bool IsHighlight = false);
+    /// <summary>
+    /// One cell of the sheet: the image plus an optional caption drawn in its lower-right corner
+    /// (a timestamp for video frames, the file name for images).
+    /// </summary>
+    public sealed record Thumbnail(SKBitmap Image, string? Caption = null, bool IsHighlight = false)
+    {
+        /// <summary>Convenience overload for video frames: the caption is the formatted time index.</summary>
+        public Thumbnail(SKBitmap image, TimeIndex time, bool isHighlight = false)
+            : this(image, time.ToTimestamp(), isHighlight)
+        {
+        }
+    }
 
     /// <summary>Optional two-column metadata header injected by the orchestrator.</summary>
     public HeaderColumns? HeaderOverride { get; set; }
@@ -304,21 +315,24 @@ public sealed class ContactSheet
 
         yield return new BitmapEl(thumb.Image, SKRect.Create(imgX, imgY, grid.ThumbW, grid.ThumbH));
 
-        if (o.Timestamp)
+        if (o.Timestamp && !string.IsNullOrEmpty(thumb.Caption))
         {
-            foreach (var e in TimestampElements(thumb.Time.ToTimestamp(), tsFont, o, imgX, imgY, grid.ThumbW, grid.ThumbH))
+            foreach (var e in CaptionElements(thumb.Caption, tsFont, o, imgX, imgY, grid.ThumbW, grid.ThumbH))
             {
                 yield return e;
             }
         }
     }
 
-    private static IEnumerable<Element> TimestampElements(
+    private static IEnumerable<Element> CaptionElements(
         string text, SKFont font, ContactSheetOptions o, float imgX, float imgY, float w, float h)
     {
+        float pad = 4f;
+
+        // Captions can be arbitrarily long (image file names), so clip them to the thumbnail.
+        text = Ellipsize(font, text, w - 8 - (2 * pad));
         float textW = MeasureTextWidth(font, text);
         float lh = LineHeight(font);
-        float pad = 4f;
         float boxW = textW + (2 * pad);
         float boxH = lh + pad;
         float bx = imgX + w - boxW - 4;
@@ -374,6 +388,27 @@ public sealed class ContactSheet
         }
 
         return new SKFont(typeface ?? SKTypeface.Default, style.Size);
+    }
+
+    /// <summary>Shortens <paramref name="text"/> with a trailing ellipsis until it fits
+    /// <paramref name="maxWidth"/>; returns it unchanged when it already fits.</summary>
+    private static string Ellipsize(SKFont font, string text, float maxWidth)
+    {
+        if (maxWidth <= 0 || MeasureTextWidth(font, text) <= maxWidth)
+        {
+            return text;
+        }
+
+        for (int length = text.Length - 1; length > 0; length--)
+        {
+            var candidate = string.Concat(text.AsSpan(0, length), "…");
+            if (MeasureTextWidth(font, candidate) <= maxWidth)
+            {
+                return candidate;
+            }
+        }
+
+        return "…";
     }
 
     private static float LineHeight(SKFont font)
