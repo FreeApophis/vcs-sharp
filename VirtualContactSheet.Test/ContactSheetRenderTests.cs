@@ -263,6 +263,48 @@ public class ContactSheetRenderTests
         Assert.Equal(TestFrames.Palette[0], decoded.GetPixel(2 + 5, 47));
     }
 
+    [Fact]
+    public void Render_WithABodyLayout_DrawsEachPictureInItsOwnRectangle()
+    {
+        var options = TextFreeOptions();
+        List<ContactSheet.Thumbnail> thumbnails =
+        [
+            new(TestFrames.Solid(100, 50, SKColors.Red)),
+            new(TestFrames.Solid(40, 80, SKColors.Lime)),
+        ];
+        var body = new BodyLayout(150, 90, [SKRectI.Create(2, 2, 100, 50), SKRectI.Create(106, 2, 40, 80)]);
+
+        try
+        {
+            using var decoded = SKBitmap.Decode(new ContactSheet(options).Render(thumbnails, body));
+
+            Assert.Equal((150, 90), (decoded.Width, decoded.Height));
+            Assert.Equal(SKColors.Red, decoded.GetPixel(50, 25));
+            Assert.Equal(SKColors.Lime, decoded.GetPixel(120, 70));
+            Assert.Equal(options.SheetBackground, decoded.GetPixel(50, 70));
+        }
+        finally
+        {
+            TestFrames.DisposeAll(thumbnails);
+        }
+    }
+
+    [Fact]
+    public void Render_WithABodyLayoutForADifferentCount_Throws()
+    {
+        List<ContactSheet.Thumbnail> thumbnails = [new(TestFrames.Solid(10, 10, SKColors.Red))];
+        var body = new BodyLayout(20, 20, []);
+
+        try
+        {
+            Assert.Throws<ArgumentException>(() => new ContactSheet(TextFreeOptions()).Render(thumbnails, body));
+        }
+        finally
+        {
+            TestFrames.DisposeAll(thumbnails);
+        }
+    }
+
     private static SKBitmap RenderGrid(ContactSheetOptions options)
     {
         var thumbnails = TestFrames.Grid(8);

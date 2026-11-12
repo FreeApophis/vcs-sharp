@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Library: placing the pictures is now separate from drawing them. `GridPlanner.Plan` returns a
+  `BodyLayout` (sheet body size plus one rectangle per picture) from a `LayoutSpacing`
+  (`LayoutSpacing.For(options)`), and `ContactSheet.Render(thumbnails, body, title)` draws any
+  such layout. `Render(thumbnails, title)` still renders the regular grid, unchanged.
+
+### Added
+
 - `--no-header` (and `--header`) to hide or show the metadata header, also as `header` in the
   `[filter]` config section.
 - `--padding` (alias `--gap`) sets the space between thumbnails and around the grid, which was

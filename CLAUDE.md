@@ -103,6 +103,9 @@ Shared:
   medium-agnostic: an `SKBitmap` plus an optional `string? Caption` (long captions are ellipsized)
 - `ContactSheetOptions.cs` — all grid/style settings (`Columns`, `Rows`, `Interval`, `Polaroid`, `SoftShadow`,
   `CornerRadius`, `BorderWidth`, …)
+- `BodyLayout.cs`, `LayoutSpacing.cs`, `GridPlanner.cs` — pure placement: a planner turns sizes
+  or aspect ratios plus spacing into one rectangle per picture; `ContactSheet.Render(thumbs, body)`
+  only draws. Test new layouts as numbers in, rectangles out
 - `TimeIndex.cs` — flexible time parser ("3m30", "1:22", "90", "1h2m3s")
 - `CaptureException.cs` — thrown when a frame capture or an image load fails
 - `MissingFrame.cs` — gray placeholder with a circled warning icon, drawn in the cell of a video
