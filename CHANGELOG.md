@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `int` still converts implicitly, so object initialisers keep compiling, but reads need to
   handle the absent case.
 - Updated to .NET 11
+- Updated SkiaSharp to 4.156.0, System.CommandLine to 3.0.0 and Tomlyn to 2.11.1. Rendered
+  sheets are unchanged; a missing input now reports `Required argument 'files' missing`.
 
 ### Fixed
 

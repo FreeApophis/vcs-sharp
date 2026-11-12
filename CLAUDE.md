@@ -208,11 +208,11 @@ All `font.MeasureText(...)` calls in `ContactSheet.cs` use this helper.
 
 Uses Central Package Management (`Directory.Packages.props`). Add new packages there with `<PackageVersion>` before referencing them in individual projects.
 
-Key library dependencies: `FFMpegCore 6.0.0`, `SkiaSharp 4.152.1`, `Funcky 3.8.0`.
+Key library dependencies: `FFMpegCore 6.0.0`, `SkiaSharp 4.156.0`, `Funcky 3.8.0`.
 
 ## CLI
 
-The CLI uses **System.CommandLine 2.0.8**. Run `vcs --help` for the full option list.
+The CLI uses **System.CommandLine 3.0.0**. Run `vcs --help` for the full option list.
 
 Key patterns used in `Program.cs` / `CliOptions.cs`:
 - `new CommandLine.Option<T>(name, alias)` — primary name + alias in one constructor call
