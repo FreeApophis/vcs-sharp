@@ -48,7 +48,7 @@ public class ImageCollectionTests
     public async Task SelectImages_MoreImagesThanCells_SamplesEvenlyAcrossTheCollection()
     {
         var collection = Fake(Enumerable.Range(0, 100).Select(i => $"{i:D3}.png"));
-        var info = await collection.GetInfoAsync();
+        var info = await collection.GetInfoAsync(ct: TestContext.Current.CancellationToken);
 
         var selected = collection.SelectImages(info, new ContactSheetOptions { Columns = 2, Rows = 2 });
 
@@ -60,7 +60,7 @@ public class ImageCollectionTests
     public async Task SelectImages_FewerImagesThanCells_KeepsThemAll()
     {
         var collection = Fake(["a.png", "b.png", "c.png"]);
-        var info = await collection.GetInfoAsync();
+        var info = await collection.GetInfoAsync(ct: TestContext.Current.CancellationToken);
 
         var selected = collection.SelectImages(info, new ContactSheetOptions { Columns = 4, Rows = 4 });
 
@@ -72,7 +72,7 @@ public class ImageCollectionTests
     {
         var collection = Fake(Enumerable.Range(0, 20).Select(i => $"{i:D2}.png"));
         collection.Selection = ImageSelection.All;
-        var info = await collection.GetInfoAsync();
+        var info = await collection.GetInfoAsync(ct: TestContext.Current.CancellationToken);
 
         var selected = collection.SelectImages(info, new ContactSheetOptions { Columns = 2, Rows = 2 });
 
@@ -85,7 +85,7 @@ public class ImageCollectionTests
         var loader = new FakeImageLoader();
         var collection = new ImageCollection(["a.png", "b.png", "c.png", "d.png"], loader, new FakeImageProbe());
 
-        var bytes = await collection.BuildContactSheetAsync(TextFreeOptions());
+        var bytes = await collection.BuildContactSheetAsync(TextFreeOptions(), ct: TestContext.Current.CancellationToken);
         using var decoded = SKBitmap.Decode(bytes);
 
         Assert.Equal(4, loader.LoadCount);
@@ -104,7 +104,7 @@ public class ImageCollectionTests
         var options = TextFreeOptions();
         options.Columns = 1;
         options.Rows = 1;
-        var bytes = await collection.BuildContactSheetAsync(options);
+        var bytes = await collection.BuildContactSheetAsync(options, ct: TestContext.Current.CancellationToken);
         using var decoded = SKBitmap.Decode(bytes);
 
         // 160 wide at 2:1 → 80 high, plus the 2px margin on each side.
@@ -123,7 +123,7 @@ public class ImageCollectionTests
         // on a loaded runner.
         var reported = new RecordingProgress();
 
-        await collection.BuildContactSheetAsync(TextFreeOptions(), reported);
+        await collection.BuildContactSheetAsync(TextFreeOptions(), reported, ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(4, reported.Values.Count);
         Assert.Equal([0.25, 0.5, 0.75, 1.0], reported.Values);
@@ -134,7 +134,7 @@ public class ImageCollectionTests
     {
         var collection = Fake([]);
 
-        await Assert.ThrowsAsync<CaptureException>(() => collection.BuildContactSheetAsync(TextFreeOptions()));
+        await Assert.ThrowsAsync<CaptureException>(() => collection.BuildContactSheetAsync(TextFreeOptions(), ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class ImageCollectionTests
         var collection = Fake(["a.png", "b.png"]);
         var output = Path.Combine(folder.Root, "sheet.png");
 
-        await collection.SaveContactSheetAsync(output, TextFreeOptions());
+        await collection.SaveContactSheetAsync(output, TextFreeOptions(), ct: TestContext.Current.CancellationToken);
 
         Assert.True(File.Exists(output));
         using var decoded = SKBitmap.Decode(output);
@@ -159,13 +159,13 @@ public class ImageCollectionTests
         folder.Add("b.png", width: 60, height: 30);
 
         var collection = ImageCollection.FromFolder(folder.Root);
-        var info = await collection.GetInfoAsync();
+        var info = await collection.GetInfoAsync(ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(2, info.Count);
         Assert.Equal(folder.Root, info.Source);
         Assert.Equal([40, 60], info.Images.Select(image => image.Width));
         Assert.True(info.TotalSize > 0);
-        Assert.Same(info, await collection.GetInfoAsync());
+        Assert.Same(info, await collection.GetInfoAsync(ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public class ImageCollectionTests
 
         var collection = ImageCollection.FromFolder(folder.Root);
 
-        Assert.False(await collection.IsValidAsync());
+        Assert.False(await collection.IsValidAsync(ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -187,14 +187,14 @@ public class ImageCollectionTests
 
         var collection = ImageCollection.FromFiles([broken]);
 
-        Assert.False(await collection.IsValidAsync());
+        Assert.False(await collection.IsValidAsync(ct: TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Caption_DefaultsToTheFileNameAndIsCustomisable()
     {
         var collection = Fake(["folder/holiday.png"]);
-        var info = await collection.GetInfoAsync();
+        var info = await collection.GetInfoAsync(ct: TestContext.Current.CancellationToken);
 
         Assert.Equal("holiday.png", collection.Caption(info.Images[0]));
 

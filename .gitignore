@@ -28,3 +28,7 @@ build/
 # tools/ffmpeg/ locally; the version it fetches is pinned in tools/ffmpeg.json.
 tools/ffmpeg/
 /VirtualContactSheet.Cli/Properties/launchSettings.json
+
+# Verify snapshot testing: files written when a snapshot does not match. Compare or
+# accept them, but never commit them; only *.verified.* files belong in git.
+*.received.*

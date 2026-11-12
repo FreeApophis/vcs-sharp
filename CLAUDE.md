@@ -15,13 +15,72 @@ dotnet run --project VirtualContactSheet.Cli -- <video> [options]
 
 The CLI binary is named `vcs`.
 
+## Development workflow: TDD (Chicago style)
+
+All changes are test-driven, in a strict **red → green → refactor** cycle:
+
+1. **Red** — write one small failing test for the next bit of behaviour. Run it and see it fail
+   for the expected reason (a compile error counts as red, but not as the reason).
+2. **Green** — write the simplest production code that makes it pass. No speculative extras.
+3. **Refactor** — clean up production and test code while all tests stay green. Run the full
+   suite (`dotnet test`) before moving on.
+
+Chicago (classicist) style means:
+
+- Test **observable behaviour and resulting state** through the public API, not interactions
+  or the internal call sequence.
+- Use **real collaborators**. Use test doubles only at true process/IO boundaries (ffmpeg/ffprobe,
+  file system, clock), via existing seams such as `IFrameCapturer`, `IImageLoader` and the
+  `*InfoProvider` interfaces. Prefer hand-written fakes and stubs over mocking frameworks.
+- Let design emerge from the tests; don't add interfaces just to mock something.
+- Bug fixes start with a test that reproduces the bug.
+
+### Test stack
+
+- **xUnit v3** (`xunit.v3`) on **Microsoft.Testing.Platform**: `global.json` opts `dotnet test`
+  into MTP, and the test project is an `Exe`. There is no `Microsoft.NET.Test.Sdk`,
+  `xunit.runner.visualstudio` or `coverlet.collector`, since those are VSTest-only.
+- Pass `TestContext.Current.CancellationToken` to anything that takes a `CancellationToken`
+  (analyzer `xUnit1051`, an error under CI's `-warnaserror`).
+- **Funcky.XUnit.v3** for monad assertions: `Assert.Some(expected, option)`, `Assert.None(option)`,
+  `Assert.Ok(...)`, `Assert.Left(...)` / `Assert.Right(...)` (extension members in
+  `Funcky.Extensions`, already imported by the Funcky implicit usings).
+- **Verify.XunitV3** for snapshot tests (`*.verified.*` files next to the tests). Verify 33+
+  requires a SponsorCheck license property: `Directory.Build.props` claims the `OpenSource`
+  exemption, which is time-bounded. When `Verify_SponsorshipExemptionUntil` has passed, the
+  build fails with `SC040`; move the date forward (at most 12 months).
+
+## Coding style: functional, with Funcky
+
+We write C# in a functional style built on [Funcky](https://github.com/polyadic/funcky).
+`FunckyImplicitUsings` (in `Directory.Build.props`) imports `Funcky`, `Funcky.Extensions`,
+`Funcky.Monads` and `static Funcky.Functional` globally, so no `using` is needed.
+
+- **`Option<T>` instead of `null`** for values that may be absent. Prefer the Funcky
+  `…OrNone` extensions (`FirstOrNone`, `SingleOrNone`, `GetValueOrNone`, `ParseInt32OrNone`,
+  …) over `TryXxx` out-parameters, and compose with `Select` / `SelectMany` / `Match` /
+  `GetOrElse` instead of `HasValue` checks.
+- **`Either<TLeft, TRight>` / `Result<T>`** for expected failures (invalid input, unsupported
+  files). Keep exceptions for the truly exceptional, and at existing boundaries (e.g.
+  `CaptureException`).
+- Prefer **immutability** (records, `init`, `with`), **pure functions** and **expressions**
+  (LINQ, switch expressions, pattern matching) over mutable state, loops and statements.
+- Use the Funcky `IEnumerable` extensions (`WhereSelect`, `Chunk`, `Interleave`, `Inspect`, …)
+  before writing a hand-rolled loop.
+- Push side effects (I/O, ffmpeg, rendering) to the edges and keep the core logic pure and
+  easy to test.
+
+`Option<T>` is the Funcky one everywhere. System.CommandLine's `Option<T>` clashes with it, so
+`CliOptions.cs` aliases the namespace (`using CommandLine = System.CommandLine;`) and writes
+`CommandLine.Option<T>`. Do the same in any other file that needs it.
+
 ## Project structure
 
 | Project | Purpose |
 |---|---|
 | `VirtualContactSheet/` | Core library (NuGet-packageable) |
 | `VirtualContactSheet.Cli/` | CLI front-end (`vcs` binary) |
-| `VirtualContactSheet.Test/` | xUnit test project |
+| `VirtualContactSheet.Test/` | xUnit v3 test project |
 
 ## Namespaces
 
@@ -149,14 +208,15 @@ All `font.MeasureText(...)` calls in `ContactSheet.cs` use this helper.
 
 Uses Central Package Management (`Directory.Packages.props`). Add new packages there with `<PackageVersion>` before referencing them in individual projects.
 
-Key library dependencies: `FFMpegCore 5.4.0`, `SkiaSharp 4.152.1`.
+Key library dependencies: `FFMpegCore 6.0.0`, `SkiaSharp 4.156.0`, `Funcky 3.8.0`.
 
 ## CLI
 
-The CLI uses **System.CommandLine 2.0.8**. Run `vcs --help` for the full option list.
+The CLI uses **System.CommandLine 3.0.0**. Run `vcs --help` for the full option list.
 
-Key patterns used in `Program.cs`:
-- `new Option<T>(name, alias)` — primary name + alias in one constructor call
+Key patterns used in `Program.cs` / `CliOptions.cs`:
+- `new CommandLine.Option<T>(name, alias)` — primary name + alias in one constructor call
+  (aliased because of the clash with Funcky's `Option<T>`, see *Coding style*)
 - `option.AcceptOnlyFromAmong(...)` — built-in value validation (used for `--format`)
 - `option.CustomParser = result => { ... }` — for `TimeIndex?` parsing
 - `rootCommand.SetAction(async (parseResult, ct) => { return exitCode; })` — typed async handler

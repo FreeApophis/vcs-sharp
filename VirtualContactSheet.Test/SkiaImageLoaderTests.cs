@@ -10,7 +10,7 @@ public class SkiaImageLoaderTests
         using var folder = new TempImageFolder();
         var path = folder.Add("wide.png", width: 100, height: 50, color: Ink);
 
-        using var thumbnail = await new SkiaImageLoader().LoadAsync(path, 60, 60);
+        using var thumbnail = await new SkiaImageLoader().LoadAsync(path, 60, 60, ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(60, thumbnail.Width);
         Assert.Equal(60, thumbnail.Height);
@@ -27,7 +27,7 @@ public class SkiaImageLoaderTests
         using var folder = new TempImageFolder();
         var path = folder.Add("wide.png", width: 100, height: 50, color: Ink);
 
-        using var thumbnail = await new SkiaImageLoader(ImageFit.Contain, SKColors.White).LoadAsync(path, 60, 60);
+        using var thumbnail = await new SkiaImageLoader(ImageFit.Contain, SKColors.White).LoadAsync(path, 60, 60, ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(SKColors.White, thumbnail.GetPixel(30, 2));
     }
@@ -38,7 +38,7 @@ public class SkiaImageLoaderTests
         using var folder = new TempImageFolder();
         var path = folder.Add("wide.png", width: 100, height: 50, color: Ink);
 
-        using var thumbnail = await new SkiaImageLoader(ImageFit.Cover).LoadAsync(path, 60, 60);
+        using var thumbnail = await new SkiaImageLoader(ImageFit.Cover).LoadAsync(path, 60, 60, ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(Ink, thumbnail.GetPixel(2, 2));
         Assert.Equal(Ink, thumbnail.GetPixel(57, 57));
@@ -50,7 +50,7 @@ public class SkiaImageLoaderTests
         using var folder = new TempImageFolder();
         var path = folder.Add("wide.png", width: 100, height: 50, color: Ink);
 
-        using var thumbnail = await new SkiaImageLoader().LoadAsync(path, 80, 0);
+        using var thumbnail = await new SkiaImageLoader().LoadAsync(path, 80, 0, ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(80, thumbnail.Width);
         Assert.Equal(40, thumbnail.Height);
@@ -64,7 +64,7 @@ public class SkiaImageLoaderTests
 
         await Assert.ThrowsAsync<CaptureException>(async () =>
         {
-            using var thumbnail = await new SkiaImageLoader().LoadAsync(path, 60, 60);
+            using var thumbnail = await new SkiaImageLoader().LoadAsync(path, 60, 60, ct: TestContext.Current.CancellationToken);
         });
     }
 
@@ -74,7 +74,7 @@ public class SkiaImageLoaderTests
         using var folder = new TempImageFolder();
         var path = folder.Add("photo.jpg", width: 120, height: 80, format: SKEncodedImageFormat.Jpeg);
 
-        var info = await new SkiaImageInfoProvider().ProbeAsync(path);
+        var info = await new SkiaImageInfoProvider().ProbeAsync(path, ct: TestContext.Current.CancellationToken);
 
         Assert.Equal(120, info.Width);
         Assert.Equal(80, info.Height);
@@ -87,5 +87,5 @@ public class SkiaImageLoaderTests
     [Fact]
     public async Task Probe_MissingFile_Throws()
         => await Assert.ThrowsAsync<FileNotFoundException>(
-            () => new SkiaImageInfoProvider().ProbeAsync(Path.Combine(Path.GetTempPath(), "vcs-missing-4b2e.png")));
+            () => new SkiaImageInfoProvider().ProbeAsync(Path.Combine(Path.GetTempPath(), "vcs-missing-4b2e.png"), ct: TestContext.Current.CancellationToken));
 }

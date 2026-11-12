@@ -6,7 +6,7 @@ public sealed class AudioStream
 
     public string? Codec { get; init; }
 
-    public int Channels { get; init; }
+    public Option<int> Channels { get; init; }
 
     public string? ChannelLayout { get; init; }
 

@@ -1,9 +1,10 @@
 using System.CommandLine;
+using CommandLine = System.CommandLine;
 
 namespace VirtualContactSheet.Cli;
 
 /// <summary>
-/// Owns every <see cref="Argument"/>/<see cref="Option"/> the CLI exposes, assembles them into
+/// Owns every <see cref="Argument"/>/<see cref="CommandLine.Option"/> the CLI exposes, assembles them into
 /// a <see cref="RootCommand"/>, and binds a parsed result back into a <see cref="CliSettings"/>.
 /// </summary>
 internal sealed class CliOptions
@@ -17,108 +18,108 @@ internal sealed class CliOptions
     };
 
     // ── Grid options ─────────────────────────────────────────────────────────────
-    private readonly Option<int> _columns = new("--columns", "-c")
+    private readonly CommandLine.Option<int> _columns = new("--columns", "-c")
     {
         Description = "Grid columns.",
         DefaultValueFactory = _ => 4,
     };
 
-    private readonly Option<int> _rows = new("--rows", "-r")
+    private readonly CommandLine.Option<int> _rows = new("--rows", "-r")
     {
         Description = "Grid rows.",
         DefaultValueFactory = _ => 4,
     };
 
-    private readonly Option<int> _width = new("--width", "-W")
+    private readonly CommandLine.Option<int> _width = new("--width", "-W")
     {
         Description = "Thumbnail width in pixels.",
         DefaultValueFactory = _ => 320,
     };
 
-    private readonly Option<int> _height = new("--height", "-H")
+    private readonly CommandLine.Option<int> _height = new("--height", "-H")
     {
         Description = "Thumbnail height in pixels (0 = derived from aspect ratio).",
         DefaultValueFactory = _ => 0,
     };
 
-    private readonly Option<string?> _aspect = new("--aspect", "-A")
+    private readonly CommandLine.Option<string?> _aspect = new("--aspect", "-A")
     {
         Description = "Aspect ratio override: float (1.778) or fraction (16/9).",
     };
 
     // ── Time options ─────────────────────────────────────────────────────────────
-    private readonly Option<TimeIndex?> _interval = TimeIndexOption("--interval", "-i", "Capture interval (e.g. 3m30, 90, 1:22).");
+    private readonly CommandLine.Option<TimeIndex?> _interval = TimeIndexOption("--interval", "-i", "Capture interval (e.g. 3m30, 90, 1:22).");
 
-    private readonly Option<TimeIndex?> _from = TimeIndexOption("--from", "Start time.");
+    private readonly CommandLine.Option<TimeIndex?> _from = TimeIndexOption("--from", "Start time.");
 
-    private readonly Option<TimeIndex?> _to = TimeIndexOption("--to", "-t", "End time.");
+    private readonly CommandLine.Option<TimeIndex?> _to = TimeIndexOption("--to", "-t", "End time.");
 
     // ── Output options ───────────────────────────────────────────────────────────
-    private readonly Option<string[]> _output = new("--output", "-o")
+    private readonly CommandLine.Option<string[]> _output = new("--output", "-o")
     {
         Description = "Output file (repeatable, paired with inputs).",
         Arity = ArgumentArity.ZeroOrMore,
     };
 
-    private readonly Option<string> _format = CreateFormatOption();
+    private readonly CommandLine.Option<string> _format = CreateFormatOption();
 
     // ── Text / metadata options ──────────────────────────────────────────────────
-    private readonly Option<string?> _title = new("--title", "-T") { Description = "Sheet title." };
+    private readonly CommandLine.Option<string?> _title = new("--title", "-T") { Description = "Sheet title." };
 
-    private readonly Option<string?> _signature = new("--signature", "-s") { Description = "Footer signature text." };
+    private readonly CommandLine.Option<string?> _signature = new("--signature", "-s") { Description = "Footer signature text." };
 
-    private readonly Option<bool> _noSignature = new("--no-signature") { Description = "Remove footer signature." };
+    private readonly CommandLine.Option<bool> _noSignature = new("--no-signature") { Description = "Remove footer signature." };
 
     // ── Highlight frames ─────────────────────────────────────────────────────────
-    private readonly Option<string[]> _highlight = new("--highlight", "-l")
+    private readonly CommandLine.Option<string[]> _highlight = new("--highlight", "-l")
     {
         Description = "Add a highlight frame at TIME (repeatable).",
         Arity = ArgumentArity.ZeroOrMore,
     };
 
     // ── Style toggles ────────────────────────────────────────────────────────────
-    private readonly Option<bool> _timestamp = new("--timestamp")
+    private readonly CommandLine.Option<bool> _timestamp = new("--timestamp")
     {
         Description = "Enable the caption overlay: timestamp for video, file name for images (default: on).",
     };
 
-    private readonly Option<bool> _noTimestamp = new("--no-timestamp") { Description = "Disable the caption overlay." };
+    private readonly CommandLine.Option<bool> _noTimestamp = new("--no-timestamp") { Description = "Disable the caption overlay." };
 
-    private readonly Option<bool> _polaroid = new("--polaroid") { Description = "Enable polaroid frame (default: off)." };
+    private readonly CommandLine.Option<bool> _polaroid = new("--polaroid") { Description = "Enable polaroid frame (default: off)." };
 
-    private readonly Option<bool> _noPolaroid = new("--no-polaroid") { Description = "Disable polaroid frame." };
+    private readonly CommandLine.Option<bool> _noPolaroid = new("--no-polaroid") { Description = "Disable polaroid frame." };
 
-    private readonly Option<bool> _shadow = new("--shadow") { Description = "Enable drop shadow (default: on)." };
+    private readonly CommandLine.Option<bool> _shadow = new("--shadow") { Description = "Enable drop shadow (default: on)." };
 
-    private readonly Option<bool> _noShadow = new("--no-shadow") { Description = "Disable drop shadow." };
+    private readonly CommandLine.Option<bool> _noShadow = new("--no-shadow") { Description = "Disable drop shadow." };
 
     // ── Image options ────────────────────────────────────────────────────────────
-    private readonly Option<bool> _recursive = new("--recursive")
+    private readonly CommandLine.Option<bool> _recursive = new("--recursive")
     {
         Description = "Include images in subfolders (image folders only).",
     };
 
-    private readonly Option<string?> _fit = CreateFitOption();
+    private readonly CommandLine.Option<string?> _fit = CreateFitOption();
 
-    private readonly Option<bool> _allImages = new("--all")
+    private readonly CommandLine.Option<bool> _allImages = new("--all")
     {
         Description = "Render every image instead of sampling --columns x --rows of them (image inputs only).",
     };
 
     // ── Config / tool / runtime options ─────────────────────────────────────────
-    private readonly Option<string?> _config = new("--config")
+    private readonly CommandLine.Option<string?> _config = new("--config")
     {
         Description = "Path to a TOML config file (layered on top of auto-discovered configs).",
     };
 
-    private readonly Option<string?> _ffmpegFolder = new("--ffmpeg-folder")
+    private readonly CommandLine.Option<string?> _ffmpegFolder = new("--ffmpeg-folder")
     {
         Description = "Folder containing ffmpeg/ffprobe binaries (default: bundled or PATH).",
     };
 
-    private readonly Option<bool> _quiet = new("--quiet", "-q") { Description = "Only print errors." };
+    private readonly CommandLine.Option<bool> _quiet = new("--quiet", "-q") { Description = "Only print errors." };
 
-    private readonly Option<bool> _continue = new("--continue") { Description = "Continue with next file on error." };
+    private readonly CommandLine.Option<bool> _continue = new("--continue") { Description = "Continue with next file on error." };
 
     /// <summary>Builds the root command containing every option declared above.</summary>
     public RootCommand BuildRootCommand()
@@ -172,9 +173,9 @@ internal sealed class CliOptions
         ContinueOnError = parse.GetValue(_continue),
     };
 
-    private static Option<string> CreateFormatOption()
+    private static CommandLine.Option<string> CreateFormatOption()
     {
-        var opt = new Option<string>("--format", "-f")
+        var opt = new CommandLine.Option<string>("--format", "-f")
         {
             Description = "Output format: png, jpg, jpeg, webp.",
             DefaultValueFactory = _ => "png",
@@ -183,9 +184,9 @@ internal sealed class CliOptions
         return opt;
     }
 
-    private static Option<string?> CreateFitOption()
+    private static CommandLine.Option<string?> CreateFitOption()
     {
-        var opt = new Option<string?>("--fit")
+        var opt = new CommandLine.Option<string?>("--fit")
         {
             Description = "How images that do not match the cell shape are fitted: contain, cover, stretch.",
         };
@@ -193,14 +194,14 @@ internal sealed class CliOptions
         return opt;
     }
 
-    private static Option<TimeIndex?> TimeIndexOption(string name, string description)
+    private static CommandLine.Option<TimeIndex?> TimeIndexOption(string name, string description)
         => TimeIndexOption(name, null, description);
 
-    private static Option<TimeIndex?> TimeIndexOption(string name, string? alias, string description)
+    private static CommandLine.Option<TimeIndex?> TimeIndexOption(string name, string? alias, string description)
     {
         var opt = alias is not null
-            ? new Option<TimeIndex?>(name, alias) { Description = description }
-            : new Option<TimeIndex?>(name) { Description = description };
+            ? new CommandLine.Option<TimeIndex?>(name, alias) { Description = description }
+            : new CommandLine.Option<TimeIndex?>(name) { Description = description };
 
         opt.CustomParser = result =>
         {

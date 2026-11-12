@@ -69,23 +69,23 @@ public sealed class ContactSheet
         switch (element)
         {
             case ColorRect(var b, var c) when c.Alpha > 0:
-            {
-                using var p = new SKPaint { Color = c };
-                canvas.DrawRect(b, p);
-                break;
-            }
+                {
+                    using var p = new SKPaint { Color = c };
+                    canvas.DrawRect(b, p);
+                    break;
+                }
 
             case BlurShadow(var b, var blur):
-            {
-                using var p = new SKPaint
                 {
-                    Color = new SKColor(0, 0, 0, 140),
-                    ImageFilter = SKImageFilter.CreateBlur(blur, blur),
-                    IsAntialias = true,
-                };
-                canvas.DrawRect(b, p);
-                break;
-            }
+                    using var p = new SKPaint
+                    {
+                        Color = new SKColor(0, 0, 0, 140),
+                        ImageFilter = SKImageFilter.CreateBlur(blur, blur),
+                        IsAntialias = true,
+                    };
+                    canvas.DrawRect(b, p);
+                    break;
+                }
 
             case BitmapEl(var bmp, var dest):
                 // Thumbnails are captured at display size, so this is a 1:1 copy; Nearest matches
@@ -94,11 +94,11 @@ public sealed class ContactSheet
                 break;
 
             case TextEl(var text, var font, var color, var x, var y):
-            {
-                using var p = new SKPaint { Color = color, IsAntialias = true };
-                canvas.DrawText(text, x, y, SKTextAlign.Left, font, p);
-                break;
-            }
+                {
+                    using var p = new SKPaint { Color = color, IsAntialias = true };
+                    canvas.DrawText(text, x, y, SKTextAlign.Left, font, p);
+                    break;
+                }
         }
     }
 
@@ -137,7 +137,8 @@ public sealed class ContactSheet
         float titleH = string.IsNullOrEmpty(title) ? 0f : LineHeight(titleFont) + (2 * padding) + 8;
         float headerH = hdrRows > 0 ? (hdrRows * LineHeight(headerFont)) + (2 * padding) + 8 : 0f;
         float sigH = o.ShowSignature && !string.IsNullOrEmpty(o.Signature)
-            ? LineHeight(sigFont) + (2 * padding) + 6 : 0f;
+            ? LineHeight(sigFont) + (2 * padding) + 6
+            : 0f;
 
         var hlGrid = new GridSpec(
             ThumbW: grid.ThumbW * 2,

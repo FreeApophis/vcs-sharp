@@ -28,6 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Funcky" />
     <ProjectReference Include="..\VirtualContactSheet\VirtualContactSheet.csproj" />
     <PackageReference Include="SkiaSharp" />
     <PackageReference Include="System.CommandLine" />
@@ -45,9 +46,7 @@
        managed symbols for our own code still ship in the library's .snupkg. -->
   <Target Name="RemoveNativeSymbolsFromToolPackage" AfterTargets="ComputeFilesToPublish">
     <ItemGroup>
-      <ResolvedFileToPublish
-        Remove="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.pdb' AND $([System.String]::new('%(ResolvedFileToPublish.RelativePath)').StartsWith('runtimes'))" />
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb' AND $([System.String]::new('%(ResolvedFileToPublish.RelativePath)').StartsWith('runtimes'))" />
     </ItemGroup>
   </Target>
 
@@ -75,10 +74,8 @@
 
   <!-- Message, not Warning: CI builds with a bare -warnaserror, which promotes MSBuild warnings
        to errors and would turn a missing optional download back into a broken build. -->
-  <Target Name="ReportMissingBundledFfmpeg" BeforeTargets="Build"
-          Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(BundleFfmpeg)' == 'true' AND !Exists('$(FfmpegBinaryFolder)ffmpeg.exe')">
-    <Message Importance="high"
-             Text="ffmpeg is not bundled into the output ($(FfmpegBinaryFolder) is empty). Run 'pwsh tools/download-ffmpeg.ps1' to bundle it, or keep ffmpeg/ffprobe on PATH." />
+  <Target Name="ReportMissingBundledFfmpeg" BeforeTargets="Build" Condition="$([MSBuild]::IsOSPlatform('Windows')) AND '$(BundleFfmpeg)' == 'true' AND !Exists('$(FfmpegBinaryFolder)ffmpeg.exe')">
+    <Message Importance="high" Text="ffmpeg is not bundled into the output ($(FfmpegBinaryFolder) is empty). Run 'pwsh tools/download-ffmpeg.ps1' to bundle it, or keep ffmpeg/ffprobe on PATH." />
   </Target>
 
 </Project>
