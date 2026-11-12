@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-12
+
 ### Changed
 
 - Updated FFMpegCore from 5.4.0 to 6.0.0. Library consumers that also reference FFMpegCore
@@ -131,7 +133,8 @@ The rename is not cosmetic: the library now generates contact sheets from images
 - `vcs` CLI with TOML configuration.
 - DejaVu Sans embedded in the library for identical text rendering on every platform.
 
-[Unreleased]: https://github.com/FreeApophis/vcs-sharp/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/FreeApophis/vcs-sharp/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/FreeApophis/vcs-sharp/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/FreeApophis/vcs-sharp/releases/tag/v1.0.0

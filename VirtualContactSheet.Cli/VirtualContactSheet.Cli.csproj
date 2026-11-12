@@ -11,7 +11,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>vcs</ToolCommandName>
     <PackageId>VirtualContactSheet.Cli</PackageId>
-    <Version>2.0.0</Version>
+    <Version>3.0.0</Version>
     <Authors>Thomas Bruderer</Authors>
     <Description>Command-line tool (vcs) for VirtualContactSheet: generates contact sheets from video files, from folders of images, or from image files. Video input requires ffmpeg/ffprobe on PATH; image input requires neither.</Description>
     <PackageTags>contact-sheet;video;image;photo;thumbnail;cli;dotnet-tool;ffmpeg</PackageTags>
