@@ -20,6 +20,7 @@ timestamp     = true   # draw the caption badge on each thumbnail
                        # (timestamp for video, file name for images)
 polaroid      = false  # render thumbnails as polaroid prints
 shadow        = true   # drop shadow behind thumbnails
+header        = true   # metadata header above the grid
 blank_evasion = true   # skip near-blank frames and retry nearby offsets (video only)
 blank_threshold = 0.08 # mean pixel intensity below which a frame is "blank" (0–1), video only
 
@@ -29,6 +30,7 @@ fit       = "contain"  # how an image that does not match the cell shape is fitt
                        # contain (letterbox), cover (crop), stretch (distort)
 recursive = false      # include images in subfolders of an image folder
 all       = false      # render every image instead of sampling columns x rows of them
+layout    = "grid"     # grid, or square (square cells, cropped to fill; then fit is ignored)
 
 [style.contact]
 background = "#ffffff"   # sheet background
