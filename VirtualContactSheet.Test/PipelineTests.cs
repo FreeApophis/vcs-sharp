@@ -42,8 +42,9 @@ public class PipelineTests
         // The first frame fails and ffmpeg picks the height, so the size comes from the later frame.
         // Both rows are kept: 2 * (90 + 2) + 2, and the first cell (at margin 2) is the placeholder.
         Assert.Equal(186, decoded.Height);
+        using var placeholder = MissingFrame.Render(160, 90);
         Assert.Equal(MissingFrame.Background, decoded.GetPixel(4, 4));
-        Assert.Equal(MissingFrame.IconColor, decoded.GetPixel(2 + 80, 2 + 45));
+        Assert.Equal(placeholder.GetPixel(80, 45), decoded.GetPixel(2 + 80, 2 + 45));
     }
 
     [Fact]
