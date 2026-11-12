@@ -4,6 +4,19 @@
 * text=auto
 
 ###############################################################################
+# Verify snapshot files
+#
+# Verify (33+) requires verified text snapshots to use LF line endings and fails
+# the test otherwise. Without this, a checkout with core.autocrlf=true (e.g. the
+# GitHub Windows runner) converts them to CRLF. Images are compared byte-for-byte.
+###############################################################################
+*.verified.txt  text eol=lf working-tree-encoding=UTF-8
+*.verified.xml  text eol=lf working-tree-encoding=UTF-8
+*.verified.json text eol=lf working-tree-encoding=UTF-8
+*.verified.bin  binary
+*.verified.png  binary
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by
