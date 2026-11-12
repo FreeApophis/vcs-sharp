@@ -33,6 +33,8 @@ all       = false      # render every image instead of sampling columns x rows o
 layout    = "grid"     # grid; square (square cells, cropped to fill); or masonry (justified rows
                        # keeping each image's proportions, every image unless all = false).
                        # fit is ignored for square and masonry.
+flow        = "rows"   # masonry only: rows (justified rows) or columns (shortest column first)
+column_ends = "cropped" # masonry columns only: cropped (end evenly) or ragged (natural heights)
 
 [style.contact]
 background = "#ffffff"   # sheet background

@@ -18,6 +18,10 @@ internal sealed class ImageConfig
 
     public string? Layout { get; set; }
 
+    public string? Flow { get; set; }
+
+    public string? ColumnEnds { get; set; }
+
     public bool? Recursive { get; set; }
 
     public bool? All { get; set; }

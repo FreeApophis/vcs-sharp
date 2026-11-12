@@ -166,6 +166,70 @@ public class CliImageOptionsTests
     }
 
     [Fact]
+    public void Masonry_FlowAndColumnEnds_AreApplied()
+    {
+        var settings = Settings() with { Layout = "masonry", Flow = "Columns", ColumnEnds = "ragged" };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.Equal(new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged), options.Layout);
+    }
+
+    [Fact]
+    public void Masonry_ColumnsEndCroppedByDefault()
+    {
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "masonry", Flow = "columns" }, new VcsConfig()));
+
+        Assert.Equal(new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Cropped), options.Layout);
+    }
+
+    [Fact]
+    public void Masonry_FlowAndColumnEndsFromConfig_AreApplied()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { Layout = "masonry", Flow = "columns", ColumnEnds = "ragged" } };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), config));
+
+        Assert.Equal(new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged), options.Layout);
+    }
+
+    [Fact]
+    public void Flow_InConfigWithoutMasonry_IsIgnored()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { Flow = "columns" } };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), config));
+
+        Assert.IsType<GridLayout>(options.Layout);
+    }
+
+    [Theory]
+    [InlineData("grid", "columns", null, 0, "--flow")]
+    [InlineData("masonry", "rows", "ragged", 0, "--column-ends")]
+    [InlineData("masonry", null, "ragged", 0, "--column-ends")]
+    [InlineData("masonry", "columns", null, 200, "--height")]
+    public void MasonryOption_ThatDoesNotApply_IsRejected(string layout, string? flow, string? ends, int height, string option)
+    {
+        var settings = Settings() with { Layout = layout, Flow = flow, ColumnEnds = ends, Height = height };
+
+        var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.StartsWith(option, error);
+    }
+
+    [Theory]
+    [InlineData("diagonal", null, "rows, columns")]
+    [InlineData(null, "jagged", "cropped, ragged")]
+    public void Masonry_InvalidFlowOrColumnEnds_ReportsTheAcceptedValues(string? flow, string? ends, string accepted)
+    {
+        var settings = Settings() with { Layout = "masonry", Flow = flow ?? "columns", ColumnEnds = ends };
+
+        var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.Contains(accepted, error);
+    }
+
+    [Fact]
     public void Create_FromFolder_HonoursRecursion()
     {
         using var folder = new TempImageFolder();

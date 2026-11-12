@@ -28,12 +28,16 @@ public sealed class ConfigLoaderTests : IDisposable
     {
         File.WriteAllText(_path, """
             [image]
-            layout = "square"
+            layout      = "square"
+            flow        = "columns"
+            column_ends = "ragged"
             """);
 
         var config = ConfigLoader.Load(_path);
 
         Assert.Equal("square", config.Image?.Layout);
+        Assert.Equal("columns", config.Image?.Flow);
+        Assert.Equal("ragged", config.Image?.ColumnEnds);
     }
 
     [Fact]

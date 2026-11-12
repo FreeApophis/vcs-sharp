@@ -27,6 +27,8 @@ public class OptionScopeValidatorTests
     [InlineData("--recursive")]
     [InlineData("--all")]
     [InlineData("--layout")]
+    [InlineData("--flow")]
+    [InlineData("--column-ends")]
     public void ImageOnlyOption_WithOnlyVideoInputs_IsRejected(string option)
     {
         var error = Assert.Left(OptionScopeValidator.Validate(WithImageOption(option), [VideoInput]));
@@ -73,6 +75,8 @@ public class OptionScopeValidatorTests
         "--fit" => Settings() with { Fit = "cover" },
         "--recursive" => Settings() with { Recursive = true },
         "--layout" => Settings() with { Layout = "square" },
+        "--flow" => Settings() with { Flow = "columns" },
+        "--column-ends" => Settings() with { ColumnEnds = "ragged" },
         _ => Settings() with { AllImages = true },
     };
 

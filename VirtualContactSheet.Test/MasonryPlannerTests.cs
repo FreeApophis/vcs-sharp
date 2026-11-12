@@ -70,4 +70,57 @@ public class MasonryPlannerTests
 
         Assert.Equal([SKRectI.Create(0, 0, 400, 40)], body.Pictures);
     }
+
+    [Fact]
+    public void Columns_EachImageGoesIntoTheShortestColumnLeftmostFirst()
+    {
+        var body = MasonryPlanner.Columns([1, 0.5, 1, 1], columns: 2, columnWidth: 100, ColumnEnds.Ragged, Tight);
+
+        Assert.Equal(
+            [SKRectI.Create(0, 0, 100, 100), SKRectI.Create(100, 0, 100, 200), SKRectI.Create(0, 100, 100, 100), SKRectI.Create(0, 200, 100, 100)],
+            body.Pictures);
+    }
+
+    [Fact]
+    public void Columns_RaggedIsAsTallAsTheTallestColumn()
+    {
+        var body = MasonryPlanner.Columns([1, 0.5, 1, 1], columns: 2, columnWidth: 100, ColumnEnds.Ragged, Tight);
+
+        Assert.Equal((200, 300), (body.Width, body.Height));
+    }
+
+    [Fact]
+    public void Columns_CroppedEndsEveryColumnAtTheMeanHeight()
+    {
+        // Columns of 300 and 200 meet at 250: the first squeezes three images, the second stretches one.
+        var body = MasonryPlanner.Columns([1, 0.5, 1, 1], columns: 2, columnWidth: 100, ColumnEnds.Cropped, Tight);
+
+        Assert.Equal(
+            [SKRectI.Create(0, 0, 100, 83), SKRectI.Create(100, 0, 100, 250), SKRectI.Create(0, 83, 100, 84), SKRectI.Create(0, 167, 100, 83)],
+            body.Pictures);
+        Assert.Equal(250, body.Height);
+    }
+
+    [Fact]
+    public void Columns_LeavesMarginsGapsAndFramesAroundThePictures()
+    {
+        var spacing = new LayoutSpacing(Gap: 2, Margin: 2, FrameSide: 1, FrameTop: 1, FrameBottom: 3);
+
+        var body = MasonryPlanner.Columns([1, 1, 1], columns: 2, columnWidth: 100, ColumnEnds.Ragged, spacing);
+
+        // Cells are 102 x 104; the third image goes below the first, one gap further down.
+        Assert.Equal(
+            [SKRectI.Create(3, 3, 100, 100), SKRectI.Create(107, 3, 100, 100), SKRectI.Create(3, 109, 100, 100)],
+            body.Pictures);
+        Assert.Equal((2 + 102 + 2 + 102 + 2, 2 + 104 + 2 + 104 + 2), (body.Width, body.Height));
+    }
+
+    [Fact]
+    public void Columns_CroppedIgnoresEmptyColumnsAndKeepsTheirWidth()
+    {
+        var body = MasonryPlanner.Columns([1], columns: 3, columnWidth: 100, ColumnEnds.Cropped, Tight);
+
+        Assert.Equal([SKRectI.Create(0, 0, 100, 100)], body.Pictures);
+        Assert.Equal((300, 100), (body.Width, body.Height));
+    }
 }

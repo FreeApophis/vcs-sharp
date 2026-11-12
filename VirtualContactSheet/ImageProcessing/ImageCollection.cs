@@ -222,6 +222,12 @@ public sealed class ImageCollection
         {
             GridLayout => GridPlanner.Plan(selected.Count, options.Columns, ThumbnailSize(selected[0], options), spacing),
             SquareLayout => GridPlanner.Plan(selected.Count, options.Columns, new SKSizeI(width, width), spacing),
+            MasonryLayout { Flow: MasonryFlow.Columns } masonry => MasonryPlanner.Columns(
+                [.. selected.Select(image => image.AspectRatio)],
+                options.Columns,
+                width,
+                masonry.Ends,
+                spacing),
             MasonryLayout => MasonryPlanner.Rows(
                 [.. selected.Select(image => image.AspectRatio)],
                 spacing.Extent(Math.Max(1, options.Columns), width + spacing.FrameWidth),

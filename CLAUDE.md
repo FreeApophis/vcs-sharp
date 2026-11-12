@@ -129,7 +129,8 @@ Shared:
 - `ImageHeaderBuilder.cs` — two-column metadata header for a collection
 - `ImageSelection.cs` — `Sample` (evenly spread over the collection) vs `All`
 - `ImageLayout.cs` — closed hierarchy for how images are arranged: `GridLayout` (default),
-  `SquareLayout` (square cells), `MasonryLayout` (justified rows keeping proportions, planned by
+  `SquareLayout` (square cells), `MasonryLayout(Flow, Ends)` (keeps proportions: justified rows,
+  or columns filled shortest-first with `ColumnEnds.Cropped`/`Ragged` bottoms; planned by
   `MasonryPlanner`). For square and masonry the default loader crops with `ImageFit.Cover`
 
 `ContactSheetOptions` is shared; its time-based members (`Interval`, `From`, `To`, `Highlights`,

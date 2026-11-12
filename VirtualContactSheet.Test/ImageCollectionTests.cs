@@ -275,6 +275,26 @@ public class ImageCollectionTests
         Assert.Equal(2 + 50 + 2, decoded.Height);
     }
 
+    [Theory]
+    [InlineData(ColumnEnds.Ragged, 200)]
+    [InlineData(ColumnEnds.Cropped, 150)]
+    public async Task BuildContactSheet_MasonryColumns_StacksImagesInColumnsOfTheThumbnailWidth(ColumnEnds ends, int columnHeight)
+    {
+        var probe = new FakeImageProbe(new Dictionary<string, (int, int)> { ["square.png"] = (100, 100), ["tall.png"] = (100, 200) });
+        var collection = new ImageCollection(["square.png", "tall.png"], new FakeImageLoader(), probe)
+        {
+            Layout = new MasonryLayout(MasonryFlow.Columns, ends),
+        };
+
+        var options = TextFreeOptions();
+        options.ThumbnailWidth = 100;
+        var bytes = await collection.BuildContactSheetAsync(options, ct: TestContext.Current.CancellationToken);
+        using var decoded = SKBitmap.Decode(bytes);
+
+        // Two columns of 100: the columns are 100 and 200 high, and meet at 150 when cropped.
+        Assert.Equal((2 + 100 + 2 + 100 + 2, 2 + columnHeight + 2), (decoded.Width, decoded.Height));
+    }
+
     private static ImageCollection Fake(IEnumerable<string> paths)
         => new(paths, new FakeImageLoader(), new FakeImageProbe());
 

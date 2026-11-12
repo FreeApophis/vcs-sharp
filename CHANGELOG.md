@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each full row is scaled to end exactly at the right edge. Masonry uses every image unless
   `all = false` is set in `[image]`; `--fit` and `--aspect` are rejected. In the library:
   `ImageCollection.Layout = new MasonryLayout()`, planned by `MasonryPlanner.Rows`.
+- `--flow columns` for masonry: `--columns` columns of `--width`, each image placed in the
+  currently shortest column. `--column-ends cropped` (the default) ends every column at the same
+  height by trimming each of its images a little; `--column-ends ragged` keeps the natural
+  heights. Also as `flow` and `column_ends` in `[image]`. `--flow` without `--layout masonry`,
+  `--column-ends` without `--flow columns`, and `--height` with `--flow columns` are errors. In the
+  library: `new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged)`, planned by
+  `MasonryPlanner.Columns`.
 
 ### Added
 

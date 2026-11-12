@@ -127,6 +127,16 @@ internal sealed class CliOptions
 
     private readonly CommandLine.Option<string?> _layout = CreateLayoutOption();
 
+    private readonly CommandLine.Option<string?> _flow = CreateChoiceOption(
+        "--flow",
+        "Masonry fill direction: rows (justified rows, default), columns (each image into the shortest column).",
+        ImageOptionsFactory.AcceptedFlows);
+
+    private readonly CommandLine.Option<string?> _columnEnds = CreateChoiceOption(
+        "--column-ends",
+        "Bottom of masonry columns: cropped (all end evenly, default), ragged (natural heights).",
+        ImageOptionsFactory.AcceptedColumnEnds);
+
     private readonly CommandLine.Option<bool> _allImages = new("--all")
     {
         Description = "Render every image instead of sampling --columns x --rows of them (image inputs only).",
@@ -162,7 +172,7 @@ internal sealed class CliOptions
             _polaroid, _noPolaroid,
             _shadow, _noShadow,
             _cornerRadius, _borderWidth, _borderColor,
-            _recursive, _fit, _allImages, _layout,
+            _recursive, _fit, _allImages, _layout, _flow, _columnEnds,
             _config, _ffmpegFolder, _quiet, _continue,
         };
 
@@ -202,6 +212,8 @@ internal sealed class CliOptions
         Fit = parse.GetResult(_fit) is not null ? parse.GetValue(_fit) : null,
         AllImages = parse.GetValue(_allImages),
         Layout = parse.GetResult(_layout) is not null ? parse.GetValue(_layout) : null,
+        Flow = parse.GetValue(_flow),
+        ColumnEnds = parse.GetValue(_columnEnds),
         ConfigPath = parse.GetValue(_config),
         FfmpegFolder = parse.GetValue(_ffmpegFolder) ?? BundledBinaries.Detect(),
         Quiet = parse.GetValue(_quiet),
@@ -237,6 +249,13 @@ internal sealed class CliOptions
                         + "masonry (justified rows that keep each image's proportions; all images by default). Image inputs only.",
         };
         opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedLayouts);
+        return opt;
+    }
+
+    private static CommandLine.Option<string?> CreateChoiceOption(string name, string description, string[] accepted)
+    {
+        var opt = new CommandLine.Option<string?>(name) { Description = description };
+        opt.AcceptOnlyFromAmong(accepted);
         return opt;
     }
 
