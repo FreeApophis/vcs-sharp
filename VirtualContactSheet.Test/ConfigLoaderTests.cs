@@ -23,5 +23,18 @@ public sealed class ConfigLoaderTests : IDisposable
         Assert.False(config.Filter?.Header);
     }
 
+    [Fact]
+    public void Load_ExplicitFile_KeepsTheImageLayout()
+    {
+        File.WriteAllText(_path, """
+            [image]
+            layout = "square"
+            """);
+
+        var config = ConfigLoader.Load(_path);
+
+        Assert.Equal("square", config.Image?.Layout);
+    }
+
     public void Dispose() => File.Delete(_path);
 }
