@@ -12,7 +12,7 @@ public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
             ? new FFOptions { BinaryFolder = binaryFolder }
             : null;
 
-    public async Task<VideoInfo> ProbeAsync(string path, CancellationToken cancellationToken = default)
+    public async Task<VideoInfo> ProbeAsync(string path, CancellationToken ct = default)
     {
         if (!File.Exists(path))
         {
@@ -21,7 +21,7 @@ public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
 
         try
         {
-            IMediaAnalysis analysis = await FFProbe.AnalyseAsync(path, _ffOptions, cancellationToken).ConfigureAwait(false);
+            IMediaAnalysis analysis = await FFProbe.AnalyseAsync(path, _ffOptions, ct).ConfigureAwait(false);
 
             return ToVideoInfo(path, analysis);
         }

@@ -1,12 +1,5 @@
 namespace VirtualContactSheet.Cli;
 
-/// <summary>Which pipeline produces a sheet for an input.</summary>
-internal enum SheetInputKind
-{
-    Video,
-    Images,
-}
-
 /// <summary>
 /// One unit of work — exactly one output sheet. A video input holds a single path; an image
 /// input holds either a folder or the loose image files that were grouped into one sheet.
