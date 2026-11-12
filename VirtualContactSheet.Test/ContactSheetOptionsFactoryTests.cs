@@ -147,6 +147,46 @@ public class ContactSheetOptionsFactoryTests
         Assert.Equal(defaults.SheetBackground, options.SheetBackground);
     }
 
+    [Fact]
+    public void NoHeader_HidesTheHeader()
+    {
+        var options = Assert.Right(ContactSheetOptionsFactory.Create(Settings() with { NoHeader = true }));
+
+        Assert.False(options.ShowHeader);
+    }
+
+    [Fact]
+    public void HeaderFlag_OverridesConfigThatHidesIt()
+    {
+        var config = new VcsConfig { Filter = new FilterConfig { Header = false } };
+
+        var hidden = Assert.Right(ContactSheetOptionsFactory.Create(Settings(), config));
+        var shown = Assert.Right(ContactSheetOptionsFactory.Create(Settings() with { UseHeader = true }, config));
+
+        Assert.False(hidden.ShowHeader);
+        Assert.True(shown.ShowHeader);
+    }
+
+    [Fact]
+    public void Padding_OverridesConfig()
+    {
+        var config = new VcsConfig { Main = new MainConfig { Padding = 20 } };
+
+        var fromConfig = Assert.Right(ContactSheetOptionsFactory.Create(Settings(), config));
+        var fromCli = Assert.Right(ContactSheetOptionsFactory.Create(Settings() with { Padding = 0 }, config));
+
+        Assert.Equal(20, fromConfig.Padding);
+        Assert.Equal(0, fromCli.Padding);
+    }
+
+    [Fact]
+    public void NegativePadding_FailsWithError()
+    {
+        var error = Assert.Left(ContactSheetOptionsFactory.Create(Settings() with { Padding = -1 }));
+
+        Assert.Contains("--padding", error);
+    }
+
     private static CliSettings Settings() => new()
     {
         Files = ["in.mkv"],

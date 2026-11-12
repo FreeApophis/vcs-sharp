@@ -44,6 +44,8 @@ internal sealed class FilterConfig
 
     public bool? Shadow { get; set; }
 
+    public bool? Header { get; set; }
+
     public bool? BlankEvasion { get; set; }
 
     public double? BlankThreshold { get; set; }

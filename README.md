@@ -249,6 +249,7 @@ vcs holiday/                          # one sheet from the folder -> holiday.png
 vcs holiday/ --recursive --all        # every image, subfolders included
 vcs holiday/ --fit cover -c 5 -r 4    # crop to fill the cells instead of letterboxing
 vcs holiday/*.jpg -o summer.jpg -f jpg
+vcs holiday/ --no-header --gap 0      # just the pictures, edge to edge
 ```
 
 Each video and each folder produces its own sheet; loose image files are combined into a single
@@ -257,10 +258,10 @@ PowerShell as it does in a POSIX shell.
 
 | | Video | Images |
 | --- | :---: | :---: |
-| `--columns`, `--rows`, `--width`, `--height`, `--aspect` | ✅ | ✅ |
+| `--columns`, `--rows`, `--width`, `--height`, `--aspect`, `--padding` | ✅ | ✅ |
 | `--format`, `--output`, `--title`, `--signature` | ✅ | ✅ |
 | `--timestamp` (caption: time index / file name) | ✅ | ✅ |
-| `--polaroid`, `--shadow` | ✅ | ✅ |
+| `--polaroid`, `--shadow`, `--header` | ✅ | ✅ |
 | `--interval`, `--from`, `--to`, `--highlight` | ✅ | — |
 | `--recursive`, `--fit`, `--all` | — | ✅ |
 

@@ -47,6 +47,11 @@ internal sealed class CliOptions
         Description = "Aspect ratio override: float (1.778) or fraction (16/9).",
     };
 
+    private readonly CommandLine.Option<int?> _padding = new("--padding", "--gap")
+    {
+        Description = "Space between thumbnails and around the grid, in pixels (default: 8).",
+    };
+
     // ── Time options ─────────────────────────────────────────────────────────────
     private readonly CommandLine.Option<TimeIndex?> _interval = TimeIndexOption("--interval", "-i", "Capture interval (e.g. 3m30, 90, 1:22).");
 
@@ -69,6 +74,10 @@ internal sealed class CliOptions
     private readonly CommandLine.Option<string?> _signature = new("--signature", "-s") { Description = "Footer signature text." };
 
     private readonly CommandLine.Option<bool> _noSignature = new("--no-signature") { Description = "Remove footer signature." };
+
+    private readonly CommandLine.Option<bool> _header = new("--header") { Description = "Show the metadata header (default: on)." };
+
+    private readonly CommandLine.Option<bool> _noHeader = new("--no-header") { Description = "Hide the metadata header." };
 
     // ── Highlight frames ─────────────────────────────────────────────────────────
     private readonly CommandLine.Option<string[]> _highlight = new("--highlight", "-l")
@@ -126,10 +135,11 @@ internal sealed class CliOptions
         => new("Virtual Contact Sheet — generates contact sheets from video files or from folders of images.")
         {
             _files,
-            _columns, _rows, _width, _height, _aspect,
+            _columns, _rows, _width, _height, _aspect, _padding,
             _interval, _from, _to,
             _output, _format,
             _title, _signature, _noSignature,
+            _header, _noHeader,
             _highlight,
             _timestamp, _noTimestamp,
             _polaroid, _noPolaroid,
@@ -153,6 +163,7 @@ internal sealed class CliOptions
         Width = parse.GetResult(_width) is not null ? parse.GetValue(_width) : null,
         Height = parse.GetValue(_height),
         AspectRatio = parse.GetValue(_aspect),
+        Padding = parse.GetValue(_padding),
         Format = parse.GetResult(_format) is not null ? parse.GetValue(_format) : null,
         Title = parse.GetValue(_title),
         Signature = parse.GetValue(_signature),
@@ -164,6 +175,8 @@ internal sealed class CliOptions
         NoPolaroid = parse.GetValue(_noPolaroid),
         UseShadow = parse.GetValue(_shadow),
         NoShadow = parse.GetValue(_noShadow),
+        UseHeader = parse.GetValue(_header),
+        NoHeader = parse.GetValue(_noHeader),
         Recursive = parse.GetValue(_recursive),
         Fit = parse.GetResult(_fit) is not null ? parse.GetValue(_fit) : null,
         AllImages = parse.GetValue(_allImages),

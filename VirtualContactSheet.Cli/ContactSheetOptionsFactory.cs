@@ -9,11 +9,15 @@ namespace VirtualContactSheet.Cli;
 /// </summary>
 internal static class ContactSheetOptionsFactory
 {
-    /// <summary>The sheet options, or the error for the first invalid <c>--highlight</c> or <c>--aspect</c>.</summary>
+    /// <summary>
+    /// The sheet options, or the error for the first invalid <c>--highlight</c>, <c>--aspect</c>
+    /// or <c>--padding</c>.
+    /// </summary>
     public static Either<string, ContactSheetOptions> Create(CliSettings settings, VcsConfig config)
         => from highlights in ParseHighlights(settings.HighlightStrings)
            from aspectRatio in ParseAspectRatioSetting(settings.AspectRatio)
-           select Build(settings, config, highlights, aspectRatio);
+           from padding in ValidatePadding(settings.Padding)
+           select Build(settings, config, highlights, aspectRatio, padding);
 
     /// <summary>Convenience overload used by tests; equivalent to an empty config.</summary>
     public static Either<string, ContactSheetOptions> Create(CliSettings settings)
@@ -23,7 +27,8 @@ internal static class ContactSheetOptionsFactory
         CliSettings settings,
         VcsConfig config,
         IReadOnlyList<TimeIndex> highlights,
-        Option<float> aspectRatio)
+        Option<float> aspectRatio,
+        Option<int> padding)
     {
         var result = new ContactSheetOptions();
 
@@ -85,6 +90,7 @@ internal static class ContactSheetOptionsFactory
         ApplyToggle(settings.UseTimestamp, settings.NoTimestamp, on => result.Timestamp = on);
         ApplyToggle(settings.UsePolaroid, settings.NoPolaroid, on => result.Polaroid = on);
         ApplyToggle(settings.UseShadow, settings.NoShadow, on => result.SoftShadow = on);
+        ApplyToggle(settings.UseHeader, settings.NoHeader, on => result.ShowHeader = on);
 
         if (settings.Height > 0)
         {
@@ -92,6 +98,7 @@ internal static class ContactSheetOptionsFactory
         }
 
         result.AspectRatio = aspectRatio.GetOrElse(result.AspectRatio);
+        result.Padding = padding.GetOrElse(result.Padding);
 
         return result;
     }
@@ -144,6 +151,11 @@ internal static class ContactSheetOptionsFactory
             if (filter.Shadow is { } shadow)
             {
                 result.SoftShadow = shadow;
+            }
+
+            if (filter.Header is { } header)
+            {
+                result.ShowHeader = header;
             }
 
             if (filter.BlankEvasion is { } be)
@@ -215,6 +227,12 @@ internal static class ContactSheetOptionsFactory
             set(true);
         }
     }
+
+    /// <summary>None when <c>--padding</c> was not given; an error when it is negative.</summary>
+    private static Either<string, Option<int>> ValidatePadding(int? value)
+        => Option.FromNullable(value).Traverse(padding => padding >= 0
+            ? Either<string, int>.Right(padding)
+            : Either<string, int>.Left($"Invalid --padding {padding}: must be 0 or more."));
 
     private static Either<string, IReadOnlyList<TimeIndex>> ParseHighlights(IReadOnlyList<string> values)
         => values.Traverse(value => ParseTimeIndex(value).ToEither($"Invalid highlight time: '{value}'"));

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--no-header` (and `--header`) to hide or show the metadata header, also as `header` in the
+  `[filter]` config section.
+- `--padding` (alias `--gap`) sets the space between thumbnails and around the grid, which was
+  only configurable as `padding` in `[main]` before. A negative value is an error.
+
 ## [3.0.0] - 2026-11-12
 
 ### Changed
