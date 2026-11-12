@@ -9,7 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="Funcky" Version="3.6.0" />
-    <PackageVersion Include="Funcky.DiscriminatedUnion" Version="1.2.1" />
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="FFMpegCore" Version="5.4.0" />
