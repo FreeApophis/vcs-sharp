@@ -7,25 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- Library: placing the pictures is now separate from drawing them. `GridPlanner.Plan` returns a
-  `BodyLayout` (sheet body size plus one rectangle per picture) from a `LayoutSpacing`
-  (`LayoutSpacing.For(options)`), and `ContactSheet.Render(thumbnails, body, title)` draws any
-  such layout. `Render(thumbnails, title)` still renders the regular grid, unchanged.
-- `--layout masonry` for image inputs: justified rows in reading order that keep every image's
-  proportions, like a photo gallery. The sheet is as wide as a grid of `--columns`; rows aim at
-  `--height`, or by default at the height that fits about `--columns` images of median shape, and
-  each full row is scaled to end exactly at the right edge. Masonry uses every image unless
-  `all = false` is set in `[image]`; `--fit` and `--aspect` are rejected. In the library:
-  `ImageCollection.Layout = new MasonryLayout()`, planned by `MasonryPlanner.Rows`.
-- `--flow columns` for masonry: `--columns` columns of `--width`, each image placed in the
-  currently shortest column. `--column-ends cropped` (the default) ends every column at the same
-  height by trimming each of its images a little; `--column-ends ragged` keeps the natural
-  heights. Also as `flow` and `column_ends` in `[image]`. `--flow` without `--layout masonry`,
-  `--column-ends` without `--flow columns`, and `--height` with `--flow columns` are errors. In the
-  library: `new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged)`, planned by
-  `MasonryPlanner.Columns`.
+## [3.1.0] - 2026-11-12
 
 ### Added
 
@@ -41,6 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a new `[style.thumbnail]` config section (`ContactSheetOptions.CornerRadius`, `BorderWidth`,
   `BorderColor` in the library). The caption is clipped with the corners, the border lies inside
   the thumbnail so the layout does not change, and the drop shadow follows the rounded shape.
+- `--layout masonry` for image inputs: justified rows in reading order that keep every image's
+  proportions, like a photo gallery. The sheet is as wide as a grid of `--columns`; rows aim at
+  `--height`, or by default at the height that fits about `--columns` images of median shape, and
+  each full row is scaled to end exactly at the right edge. Masonry uses every image unless
+  `all = false` is set in `[image]`; `--fit` and `--aspect` are rejected. In the library:
+  `ImageCollection.Layout = new MasonryLayout()`, planned by `MasonryPlanner.Rows`.
+- `--flow columns` for masonry: `--columns` columns of `--width`, each image placed in the
+  currently shortest column. `--column-ends cropped` (the default) ends every column at the same
+  height by trimming each of its images a little; `--column-ends ragged` keeps the natural
+  heights. Also as `flow` and `column_ends` in `[image]`. `--flow` without `--layout masonry`,
+  `--column-ends` without `--flow columns`, and `--height` with `--flow columns` are errors. In the
+  library: `new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged)`, planned by
+  `MasonryPlanner.Columns`.
+- Library: placing the pictures is now separate from drawing them. `GridPlanner.Plan` returns a
+  `BodyLayout` (sheet body size plus one rectangle per picture) from a `LayoutSpacing`
+  (`LayoutSpacing.For(options)`), and `ContactSheet.Render(thumbnails, body, title)` draws any
+  such layout. `Render(thumbnails, title)` still renders the regular grid, unchanged.
 
 ## [3.0.0] - 2026-11-12
 
@@ -168,7 +167,8 @@ The rename is not cosmetic: the library now generates contact sheets from images
 - `vcs` CLI with TOML configuration.
 - DejaVu Sans embedded in the library for identical text rendering on every platform.
 
-[Unreleased]: https://github.com/FreeApophis/vcs-sharp/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/FreeApophis/vcs-sharp/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/FreeApophis/vcs-sharp/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/FreeApophis/vcs-sharp/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/FreeApophis/vcs-sharp/compare/v1.0.0...v1.0.1
