@@ -8,65 +8,14 @@ internal static class ImageOptionsFactory
     /// <summary>Values accepted by <c>--fit</c>.</summary>
     public static readonly string[] AcceptedFits = ["contain", "cover", "stretch"];
 
-    public static bool TryCreate(CliSettings settings, VcsConfig config, out ImageOptions options, out string? error)
-    {
-        var result = new ImageOptions();
-
-        if (config.Image is { } image)
-        {
-            if (image.Fit is { } configuredFit)
-            {
-                if (!TryParseFit(configuredFit, out var fit))
-                {
-                    options = result;
-                    error = FitError(configuredFit, "config");
-                    return false;
-                }
-
-                result = result with { Fit = fit };
-            }
-
-            if (image.Recursive is { } recursive)
-            {
-                result = result with { Recursive = recursive };
-            }
-
-            if (image.All is { } all)
-            {
-                result = result with { Selection = all ? ImageSelection.All : ImageSelection.Sample };
-            }
-        }
-
-        // CLI args override config — only when explicitly provided.
-        if (settings.Fit is { } requestedFit)
-        {
-            if (!TryParseFit(requestedFit, out var fit))
-            {
-                options = result;
-                error = FitError(requestedFit, "--fit");
-                return false;
-            }
-
-            result = result with { Fit = fit };
-        }
-
-        if (settings.Recursive)
-        {
-            result = result with { Recursive = true };
-        }
-
-        if (settings.AllImages)
-        {
-            result = result with { Selection = ImageSelection.All };
-        }
-
-        options = result;
-        error = null;
-        return true;
-    }
+    /// <summary>The image options, or the error for an invalid fit (the config's is checked first).</summary>
+    public static Either<string, ImageOptions> Create(CliSettings settings, VcsConfig config)
+        => from configuredFit in ParseFitSetting(config.Image?.Fit, "config")
+           from requestedFit in ParseFitSetting(settings.Fit, "--fit")
+           select Build(settings, config.Image, requestedFit.OrElse(configuredFit));
 
     /// <summary>Builds the collection for one resolved image input.</summary>
-    public static ImageCollection Create(ImageInput input, ImageOptions options)
+    public static ImageCollection CreateCollection(ImageInput input, ImageOptions options)
     {
         var loader = new SkiaImageLoader(options.Fit);
 
@@ -80,24 +29,36 @@ internal static class ImageOptionsFactory
         return collection;
     }
 
-    private static bool TryParseFit(string value, out ImageFit fit)
+    /// <summary>
+    /// Library defaults, then config, then CLI args (which always win). The flags can only switch
+    /// a setting on, so a config value stands unless the flag is given.
+    /// </summary>
+    private static ImageOptions Build(CliSettings settings, ImageConfig? image, Option<ImageFit> fit)
     {
-        switch (value.Trim().ToLowerInvariant())
+        var defaults = new ImageOptions();
+        bool recursive = settings.Recursive || (image?.Recursive ?? defaults.Recursive);
+        bool all = settings.AllImages || (image?.All ?? defaults.Selection == ImageSelection.All);
+
+        return defaults with
         {
-            case "contain":
-                fit = ImageFit.Contain;
-                return true;
-            case "cover":
-                fit = ImageFit.Cover;
-                return true;
-            case "stretch":
-                fit = ImageFit.Stretch;
-                return true;
-            default:
-                fit = ImageFit.Contain;
-                return false;
-        }
+            Fit = fit.GetOrElse(defaults.Fit),
+            Recursive = recursive,
+            Selection = all ? ImageSelection.All : ImageSelection.Sample,
+        };
     }
+
+    /// <summary>None when the fit was not given; an error when it was given but is invalid.</summary>
+    private static Either<string, Option<ImageFit>> ParseFitSetting(string? value, string source)
+        => Option.FromNullable(value).Traverse(text => ParseFit(text).ToEither(FitError(text, source)));
+
+    private static Option<ImageFit> ParseFit(string value)
+        => value.Trim().ToLowerInvariant() switch
+        {
+            "contain" => ImageFit.Contain,
+            "cover" => ImageFit.Cover,
+            "stretch" => ImageFit.Stretch,
+            _ => Option<ImageFit>.None,
+        };
 
     private static string FitError(string value, string source)
         => $"Invalid fit '{value}' in {source}. Expected one of: {string.Join(", ", AcceptedFits)}.";

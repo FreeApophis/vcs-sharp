@@ -90,117 +90,47 @@ internal static class ColorParser
         ["transparent"] = new SKColor(0x00, 0x00, 0x00, 0x00),
     };
 
-    public static bool TryParse(string? value, out SKColor color)
-    {
-        if (string.IsNullOrWhiteSpace(value))
+    /// <summary>
+    /// A named color (case-insensitive) or <c>#rgb</c>, <c>#rgba</c>, <c>#rrggbb</c>, <c>#rrggbbaa</c>;
+    /// None for anything else, including null or blank input.
+    /// </summary>
+    public static Option<SKColor> Parse(string? value)
+        => Option.FromNullable(value)
+            .Select(text => text.Trim())
+            .SelectMany(text => Named.GetValueOrNone(text).OrElse(() => ParseHex(text)));
+
+    private static Option<SKColor> ParseHex(string text)
+        => text.StartsWith('#') ? ParseDigits(text[1..]) : Option<SKColor>.None;
+
+    private static Option<SKColor> ParseDigits(string digits)
+        => digits.Length switch
         {
-            color = default;
-            return false;
-        }
-
-        var trimmed = value.Trim();
-
-        if (Named.TryGetValue(trimmed, out color))
-        {
-            return true;
-        }
-
-        if (trimmed.StartsWith('#'))
-        {
-            return TryParseHex(trimmed, out color);
-        }
-
-        color = default;
-        return false;
-    }
-
-    private static bool TryParseHex(string hex, out SKColor color)
-    {
-        // Strip leading '#'
-        var s = hex[1..];
-
-        color = default;
-        return s.Length switch
-        {
-            3 => TryExpand3(s, out color),
-            4 => TryExpand4(s, out color),
-            6 => TryParse6(s, out color),
-            8 => TryParse8(s, out color),
-            _ => false,
+            // Short forms repeat each digit: #f80 → #ff8800 (17 × d == d << 4 | d).
+            3 or 4 => digits.Traverse(HexDigit).Select(nibbles => ToColor([.. nibbles.Select(d => (byte)(d * 17))])),
+            6 or 8 => Pairs(digits).Traverse(HexByte).Select(ToColor),
+            _ => Option<SKColor>.None,
         };
-    }
 
-    private static bool TryExpand3(string s, out SKColor color)
-    {
-        // #rgb → #rrggbb
-        if (!TryHex1(s[0], out byte r) || !TryHex1(s[1], out byte g) || !TryHex1(s[2], out byte b))
+    private static IEnumerable<string> Pairs(string digits)
+        => Enumerable.Range(0, digits.Length / 2).Select(index => digits.Substring(index * 2, 2));
+
+    private static Option<byte> HexByte(string pair)
+        => from high in HexDigit(pair[0])
+           from low in HexDigit(pair[1])
+           select (byte)((high << 4) | low);
+
+    private static Option<byte> HexDigit(char digit)
+        => digit switch
         {
-            color = default;
-            return false;
-        }
-
-        color = new SKColor((byte)(r | (r << 4)), (byte)(g | (g << 4)), (byte)(b | (b << 4)));
-        return true;
-    }
-
-    private static bool TryExpand4(string s, out SKColor color)
-    {
-        // #rgba → #rrggbbaa
-        if (!TryHex1(s[0], out byte r) || !TryHex1(s[1], out byte g) || !TryHex1(s[2], out byte b) || !TryHex1(s[3], out byte a))
-        {
-            color = default;
-            return false;
-        }
-
-        color = new SKColor((byte)(r | (r << 4)), (byte)(g | (g << 4)), (byte)(b | (b << 4)), (byte)(a | (a << 4)));
-        return true;
-    }
-
-    private static bool TryParse6(string s, out SKColor color)
-    {
-        if (!TryHex2(s, 0, out byte r) || !TryHex2(s, 2, out byte g) || !TryHex2(s, 4, out byte b))
-        {
-            color = default;
-            return false;
-        }
-
-        color = new SKColor(r, g, b);
-        return true;
-    }
-
-    private static bool TryParse8(string s, out SKColor color)
-    {
-        if (!TryHex2(s, 0, out byte r) || !TryHex2(s, 2, out byte g) || !TryHex2(s, 4, out byte b) || !TryHex2(s, 6, out byte a))
-        {
-            color = default;
-            return false;
-        }
-
-        color = new SKColor(r, g, b, a);
-        return true;
-    }
-
-    private static bool TryHex2(string s, int offset, out byte value)
-    {
-        if (!TryHex1(s[offset], out byte hi) || !TryHex1(s[offset + 1], out byte lo))
-        {
-            value = 0;
-            return false;
-        }
-
-        value = (byte)((hi << 4) | lo);
-        return true;
-    }
-
-    private static bool TryHex1(char c, out byte nibble)
-    {
-        nibble = c switch
-        {
-            >= '0' and <= '9' => (byte)(c - '0'),
-            >= 'a' and <= 'f' => (byte)(c - 'a' + 10),
-            >= 'A' and <= 'F' => (byte)(c - 'A' + 10),
-            _ => 0xFF,
+            >= '0' and <= '9' => (byte)(digit - '0'),
+            >= 'a' and <= 'f' => (byte)(digit - 'a' + 10),
+            >= 'A' and <= 'F' => (byte)(digit - 'A' + 10),
+            _ => Option<byte>.None,
         };
-        return nibble != 0xFF;
-    }
+
+    /// <summary>Three channels are opaque RGB, four carry alpha.</summary>
+    private static SKColor ToColor(IReadOnlyList<byte> channels)
+        => channels.Count == 4
+            ? new SKColor(channels[0], channels[1], channels[2], channels[3])
+            : new SKColor(channels[0], channels[1], channels[2]);
 }

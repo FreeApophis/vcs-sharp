@@ -18,9 +18,17 @@ internal static class SheetRunner
             return 1;
         }
 
-        return await InputResolver.Resolve(settings.Files).Match(
+        // Everything that can be rejected before any work starts; the first error wins.
+        var plan =
+            from resolved in InputResolver.Resolve(settings.Files)
+            from inputs in OptionScopeValidator.Validate(settings, resolved)
+            from options in ContactSheetOptionsFactory.Create(settings, config)
+            from imageOptions in ImageOptionsFactory.Create(settings, config)
+            select (Inputs: inputs, Options: options, ImageOptions: imageOptions);
+
+        return await plan.Match(
             left: error => Task.FromResult(Fail(error)),
-            right: inputs => RunInputsAsync(settings, config, inputs, ct));
+            right: run => RunSheetsAsync(settings, run.Inputs, run.Options, run.ImageOptions, ct));
     }
 
     private static int Fail(string error)
@@ -29,25 +37,13 @@ internal static class SheetRunner
         return 1;
     }
 
-    private static async Task<int> RunInputsAsync(
+    private static async Task<int> RunSheetsAsync(
         CliSettings settings,
-        VcsConfig config,
         IReadOnlyList<SheetInput> inputs,
+        ContactSheetOptions options,
+        ImageOptions imageOptions,
         CancellationToken ct)
     {
-        if (!OptionScopeValidator.Validate(settings, inputs, out var scopeError))
-        {
-            Console.Error.WriteLine(scopeError);
-            return 1;
-        }
-
-        if (!ContactSheetOptionsFactory.TryCreate(settings, config, out var options, out var error)
-            || !ImageOptionsFactory.TryCreate(settings, config, out var imageOptions, out error))
-        {
-            Console.Error.WriteLine(error);
-            return 1;
-        }
-
         int exit = 0;
         for (int idx = 0; idx < inputs.Count; idx++)
         {
@@ -123,7 +119,7 @@ internal static class SheetRunner
         CliSettings settings,
         CancellationToken ct)
     {
-        var collection = ImageOptionsFactory.Create(input, imageOptions);
+        var collection = ImageOptionsFactory.CreateCollection(input, imageOptions);
         if (collection.Count == 0)
         {
             throw new CaptureException(input switch

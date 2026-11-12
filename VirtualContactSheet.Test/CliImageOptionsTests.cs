@@ -7,9 +7,8 @@ public class CliImageOptionsTests
     [Fact]
     public void Defaults_MatchTheLibraryDefaults()
     {
-        var ok = ImageOptionsFactory.TryCreate(Settings(), new VcsConfig(), out var options, out _);
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), new VcsConfig()));
 
-        Assert.True(ok);
         Assert.Equal(ImageFit.Contain, options.Fit);
         Assert.False(options.Recursive);
         Assert.Equal(ImageSelection.Sample, options.Selection);
@@ -22,7 +21,7 @@ public class CliImageOptionsTests
     [InlineData("COVER", ImageFit.Cover)]
     public void Fit_IsParsedCaseInsensitively(string value, ImageFit expected)
     {
-        ImageOptionsFactory.TryCreate(Settings() with { Fit = value }, new VcsConfig(), out var options, out _);
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Fit = value }, new VcsConfig()));
 
         Assert.Equal(expected, options.Fit);
     }
@@ -30,9 +29,8 @@ public class CliImageOptionsTests
     [Fact]
     public void Fit_Invalid_ReportsTheAcceptedValues()
     {
-        var ok = ImageOptionsFactory.TryCreate(Settings() with { Fit = "squash" }, new VcsConfig(), out _, out var error);
+        var error = Assert.Left(ImageOptionsFactory.Create(Settings() with { Fit = "squash" }, new VcsConfig()));
 
-        Assert.False(ok);
         Assert.Contains("contain, cover, stretch", error);
     }
 
@@ -41,7 +39,7 @@ public class CliImageOptionsTests
     {
         var settings = Settings() with { Recursive = true, AllImages = true };
 
-        ImageOptionsFactory.TryCreate(settings, new VcsConfig(), out var options, out _);
+        var options = Assert.Right(ImageOptionsFactory.Create(settings, new VcsConfig()));
 
         Assert.True(options.Recursive);
         Assert.Equal(ImageSelection.All, options.Selection);
@@ -52,7 +50,7 @@ public class CliImageOptionsTests
     {
         var config = new VcsConfig { Image = new ImageConfig { Fit = "cover", Recursive = true, All = true } };
 
-        ImageOptionsFactory.TryCreate(Settings(), config, out var options, out _);
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), config));
 
         Assert.Equal(ImageFit.Cover, options.Fit);
         Assert.True(options.Recursive);
@@ -64,7 +62,7 @@ public class CliImageOptionsTests
     {
         var config = new VcsConfig { Image = new ImageConfig { Fit = "cover" } };
 
-        ImageOptionsFactory.TryCreate(Settings() with { Fit = "stretch" }, config, out var options, out _);
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Fit = "stretch" }, config));
 
         Assert.Equal(ImageFit.Stretch, options.Fit);
     }
@@ -74,9 +72,8 @@ public class CliImageOptionsTests
     {
         var config = new VcsConfig { Image = new ImageConfig { Fit = "nonsense" } };
 
-        var ok = ImageOptionsFactory.TryCreate(Settings(), config, out _, out var error);
+        var error = Assert.Left(ImageOptionsFactory.Create(Settings(), config));
 
-        Assert.False(ok);
         Assert.Contains("config", error);
     }
 
@@ -89,8 +86,8 @@ public class CliImageOptionsTests
 
         var input = ResolveImages(folder.Root);
 
-        var flat = ImageOptionsFactory.Create(input, new ImageOptions());
-        var deep = ImageOptionsFactory.Create(input, new ImageOptions { Recursive = true });
+        var flat = ImageOptionsFactory.CreateCollection(input, new ImageOptions());
+        var deep = ImageOptionsFactory.CreateCollection(input, new ImageOptions { Recursive = true });
 
         Assert.Equal(1, flat.Count);
         Assert.Equal(2, deep.Count);
@@ -104,7 +101,7 @@ public class CliImageOptionsTests
         var first = folder.Add("a.png");
 
         var input = ResolveImages(second, first);
-        var collection = ImageOptionsFactory.Create(input, new ImageOptions());
+        var collection = ImageOptionsFactory.CreateCollection(input, new ImageOptions());
 
         Assert.Equal([second, first], collection.Paths);
         Assert.Null(collection.Source);
@@ -118,7 +115,7 @@ public class CliImageOptionsTests
 
         var input = ResolveImages(folder.Root);
 
-        var collection = ImageOptionsFactory.Create(input, new ImageOptions { Selection = ImageSelection.All });
+        var collection = ImageOptionsFactory.CreateCollection(input, new ImageOptions { Selection = ImageSelection.All });
 
         Assert.Equal(ImageSelection.All, collection.Selection);
     }
