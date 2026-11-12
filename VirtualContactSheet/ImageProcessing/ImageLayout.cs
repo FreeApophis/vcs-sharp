@@ -8,3 +8,10 @@ public sealed record GridLayout : ImageLayout;
 
 /// <summary>A grid of square cells.</summary>
 public sealed record SquareLayout : ImageLayout;
+
+/// <summary>
+/// Justified rows that keep every image's proportions. The sheet is as wide as a grid of
+/// <see cref="ContactSheetOptions.Columns"/>; rows aim at <see cref="ContactSheetOptions.ThumbnailHeight"/>,
+/// or by default at the height that fits about <c>Columns</c> images of median shape per row.
+/// </summary>
+public sealed record MasonryLayout : ImageLayout;

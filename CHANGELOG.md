@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BodyLayout` (sheet body size plus one rectangle per picture) from a `LayoutSpacing`
   (`LayoutSpacing.For(options)`), and `ContactSheet.Render(thumbnails, body, title)` draws any
   such layout. `Render(thumbnails, title)` still renders the regular grid, unchanged.
+- `--layout masonry` for image inputs: justified rows in reading order that keep every image's
+  proportions, like a photo gallery. The sheet is as wide as a grid of `--columns`; rows aim at
+  `--height`, or by default at the height that fits about `--columns` images of median shape, and
+  each full row is scaled to end exactly at the right edge. Masonry uses every image unless
+  `all = false` is set in `[image]`; `--fit` and `--aspect` are rejected. In the library:
+  `ImageCollection.Layout = new MasonryLayout()`, planned by `MasonryPlanner.Rows`.
 
 ### Added
 

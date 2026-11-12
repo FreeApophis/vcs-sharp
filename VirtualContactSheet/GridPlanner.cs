@@ -14,8 +14,8 @@ public static class GridPlanner
         int cellHeight = picture.Height + spacing.FrameHeight;
 
         return new BodyLayout(
-            Width: Extent(columns, cellWidth, spacing),
-            Height: Extent(rows, cellHeight, spacing),
+            Width: spacing.Extent(columns, cellWidth),
+            Height: spacing.Extent(rows, cellHeight),
             Pictures:
             [
                 .. Enumerable.Range(0, count).Select(i => SKRectI.Create(
@@ -25,8 +25,4 @@ public static class GridPlanner
                     picture.Height)),
             ]);
     }
-
-    /// <summary>Margins plus <paramref name="cells"/> cells with a gap between each pair.</summary>
-    private static int Extent(int cells, int cellSize, LayoutSpacing spacing)
-        => (2 * spacing.Margin) + (cells * cellSize) + ((cells - 1) * spacing.Gap);
 }

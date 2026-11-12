@@ -99,21 +99,44 @@ public class CliImageOptionsTests
     {
         var error = Assert.Left(ImageOptionsFactory.Create(Settings() with { Layout = "hexagon" }, new VcsConfig()));
 
-        Assert.Contains("grid, square", error);
+        Assert.Contains("grid, square, masonry", error);
     }
 
     [Theory]
-    [InlineData("--fit")]
-    [InlineData("--aspect")]
-    public void Layout_SquareWithACellShapeOption_IsRejected(string option)
+    [InlineData("square", "--fit")]
+    [InlineData("square", "--aspect")]
+    [InlineData("masonry", "--fit")]
+    [InlineData("masonry", "--aspect")]
+    public void Layout_WithACellShapeOptionItFixes_IsRejected(string layout, string option)
     {
         var settings = option == "--fit"
-            ? Settings() with { Layout = "square", Fit = "contain" }
-            : Settings() with { Layout = "square", AspectRatio = "16/9" };
+            ? Settings() with { Layout = layout, Fit = "contain" }
+            : Settings() with { Layout = layout, AspectRatio = "16/9" };
 
         var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
 
         Assert.Contains(option, error);
+        Assert.Contains(layout, error);
+    }
+
+    [Fact]
+    public void Layout_Masonry_UsesEveryImageAndCrops()
+    {
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "masonry" }, new VcsConfig()));
+
+        Assert.IsType<MasonryLayout>(options.Layout);
+        Assert.Equal(ImageSelection.All, options.Selection);
+        Assert.Equal(ImageFit.Cover, options.Fit);
+    }
+
+    [Fact]
+    public void Layout_MasonryWithAllSwitchedOffInConfig_Samples()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { All = false } };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "masonry" }, config));
+
+        Assert.Equal(ImageSelection.Sample, options.Selection);
     }
 
     [Fact]

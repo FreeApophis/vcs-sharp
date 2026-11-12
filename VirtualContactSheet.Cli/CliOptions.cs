@@ -233,7 +233,8 @@ internal sealed class CliOptions
     {
         var opt = new CommandLine.Option<string?>("--layout")
         {
-            Description = "How images are arranged: grid, square (square cells, cropped to fill). Image inputs only.",
+            Description = "How images are arranged: grid, square (square cells, cropped to fill), "
+                        + "masonry (justified rows that keep each image's proportions; all images by default). Image inputs only.",
         };
         opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedLayouts);
         return opt;

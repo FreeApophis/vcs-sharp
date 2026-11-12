@@ -161,29 +161,26 @@ public sealed class ImageCollection
         }
 
         var selected = SelectImages(info, options);
-        var (width, height) = Layout switch
-        {
-            GridLayout => ThumbnailSize(selected[0], options),
-            SquareLayout => (Math.Max(1, options.ThumbnailWidth), Math.Max(1, options.ThumbnailWidth)),
-        };
+        var body = Plan(selected, options);
 
-        // Without an explicit loader, square cells are filled by cropping. Otherwise letterbox bars
-        // take the sheet background, so a portrait photo in a landscape cell blends into the sheet
-        // instead of punching a hole in it.
+        // Without an explicit loader, square and masonry cells are filled by cropping (for masonry
+        // that only trims the odd rounding pixel). Otherwise letterbox bars take the sheet
+        // background, so a portrait photo in a landscape cell blends into the sheet instead of
+        // punching a hole in it.
         var loader = _loader ?? Layout switch
         {
             GridLayout => new SkiaImageLoader(ImageFit.Contain, options.SheetBackground),
-            SquareLayout => new SkiaImageLoader(ImageFit.Cover),
+            SquareLayout or MasonryLayout => new SkiaImageLoader(ImageFit.Cover),
         };
         var thumbs = new List<ContactSheet.Thumbnail>(selected.Count);
 
         try
         {
             int done = 0;
-            foreach (var image in selected)
+            foreach (var (image, picture) in selected.Zip(body.Pictures))
             {
                 ct.ThrowIfCancellationRequested();
-                var bitmap = await loader.LoadAsync(image.Path, width, height, ct).ConfigureAwait(false);
+                var bitmap = await loader.LoadAsync(image.Path, picture.Width, picture.Height, ct).ConfigureAwait(false);
                 thumbs.Add(new ContactSheet.Thumbnail(bitmap, Caption(image)));
                 progress?.Report(++done / (double)selected.Count);
             }
@@ -193,7 +190,7 @@ public sealed class ImageCollection
                 HeaderOverride = ImageHeaderBuilder.Build(info),
             };
 
-            return sheet.Render(thumbs, options.Title);
+            return sheet.Render(thumbs, body, options.Title);
         }
         finally
         {
@@ -215,11 +212,37 @@ public sealed class ImageCollection
         await File.WriteAllBytesAsync(outputPath, bytes, ct).ConfigureAwait(false);
     }
 
+    /// <summary>Where each selected image goes on the sheet, from the header metadata alone.</summary>
+    private BodyLayout Plan(IReadOnlyList<ImageInfo> selected, ContactSheetOptions options)
+    {
+        var spacing = LayoutSpacing.For(options);
+        int width = Math.Max(1, options.ThumbnailWidth);
+
+        return Layout switch
+        {
+            GridLayout => GridPlanner.Plan(selected.Count, options.Columns, ThumbnailSize(selected[0], options), spacing),
+            SquareLayout => GridPlanner.Plan(selected.Count, options.Columns, new SKSizeI(width, width), spacing),
+            MasonryLayout => MasonryPlanner.Rows(
+                [.. selected.Select(image => image.AspectRatio)],
+                spacing.Extent(Math.Max(1, options.Columns), width + spacing.FrameWidth),
+                options.ThumbnailHeight > 0 ? options.ThumbnailHeight : (int)Math.Round(width / MedianAspectRatio(selected)),
+                spacing),
+        };
+    }
+
+    /// <summary>With rows aimed at <c>width ÷ median</c>, a row holds about <c>Columns</c> images.</summary>
+    private static double MedianAspectRatio(IReadOnlyList<ImageInfo> images)
+    {
+        var sorted = images.Select(image => image.AspectRatio).Order().ToList();
+        int middle = sorted.Count / 2;
+        return sorted.Count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+
     /// <summary>
     /// Cell size for every thumbnail: <see cref="ContactSheetOptions.AspectRatio"/> wins, then
     /// <see cref="ContactSheetOptions.ThumbnailHeight"/>, else the first image's own aspect ratio.
     /// </summary>
-    private static (int Width, int Height) ThumbnailSize(ImageInfo first, ContactSheetOptions options)
+    private static SKSizeI ThumbnailSize(ImageInfo first, ContactSheetOptions options)
     {
         int width = Math.Max(1, options.ThumbnailWidth);
 
@@ -228,6 +251,6 @@ public sealed class ImageCollection
             ? options.ThumbnailHeight
             : Math.Max(1, (int)Math.Round(width / aspect));
 
-        return (width, height);
+        return new SKSizeI(width, height);
     }
 }

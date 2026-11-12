@@ -18,6 +18,10 @@ public sealed record LayoutSpacing(int Gap, int Margin, int FrameSide, int Frame
     /// <summary>Frame height added to every picture, top plus bottom.</summary>
     public int FrameHeight => FrameTop + FrameBottom;
 
+    /// <summary>Length of a line of <paramref name="cells"/> cells: margins, the cells, and a gap between each pair.</summary>
+    public int Extent(int cells, int cellSize)
+        => (2 * Margin) + (cells * cellSize) + ((cells - 1) * Gap);
+
     /// <summary>The spacing a sheet with these options needs. The margin leaves room for the drop shadow.</summary>
     public static LayoutSpacing For(ContactSheetOptions options)
     {

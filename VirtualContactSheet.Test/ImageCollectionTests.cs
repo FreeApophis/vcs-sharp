@@ -241,6 +241,40 @@ public class ImageCollectionTests
         Assert.Equal(SKColors.Red, decoded.GetPixel(2 + 20, 2 + 1));
     }
 
+    [Fact]
+    public async Task BuildContactSheet_MasonryLayout_KeepsEachImagesProportions()
+    {
+        var probe = new FakeImageProbe(new Dictionary<string, (int, int)> { ["wide.png"] = (200, 100), ["square.png"] = (100, 100) });
+        var collection = new ImageCollection(["wide.png", "square.png"], new FakeImageLoader(), probe) { Layout = new MasonryLayout() };
+
+        var options = TextFreeOptions();
+        options.Columns = 3;
+        options.ThumbnailWidth = 100;
+        var bytes = await collection.BuildContactSheetAsync(options, ct: TestContext.Current.CancellationToken);
+        using var decoded = SKBitmap.Decode(bytes);
+
+        // As wide as a 3-column grid: 2*2 + 3*100 + 2*2. The rows aim at 100 / 1.5 (the median aspect
+        // ratio) = 67px; two images cannot fill a row, so it stays at that height: 134 + 67 wide.
+        Assert.Equal((308, 2 + 67 + 2), (decoded.Width, decoded.Height));
+        Assert.Equal(TestFrames.Palette[0], decoded.GetPixel(2 + 133, 30));
+        Assert.Equal(TestFrames.Palette[1], decoded.GetPixel(2 + 134 + 2, 30));
+        Assert.Equal(TestFrames.Palette[1], decoded.GetPixel(2 + 134 + 2 + 66, 30));
+        Assert.Equal(options.SheetBackground, decoded.GetPixel(2 + 134 + 2 + 67, 30));
+    }
+
+    [Fact]
+    public async Task BuildContactSheet_MasonryLayoutWithAThumbnailHeight_UsesItAsTheRowHeight()
+    {
+        var collection = new ImageCollection(["a.png"], new FakeImageLoader(), new FakeImageProbe(100, 100)) { Layout = new MasonryLayout() };
+
+        var options = TextFreeOptions();
+        options.ThumbnailHeight = 50;
+        var bytes = await collection.BuildContactSheetAsync(options, ct: TestContext.Current.CancellationToken);
+        using var decoded = SKBitmap.Decode(bytes);
+
+        Assert.Equal(2 + 50 + 2, decoded.Height);
+    }
+
     private static ImageCollection Fake(IEnumerable<string> paths)
         => new(paths, new FakeImageLoader(), new FakeImageProbe());
 

@@ -9,7 +9,7 @@ internal static class ImageOptionsFactory
     public static readonly string[] AcceptedFits = ["contain", "cover", "stretch"];
 
     /// <summary>Values accepted by <c>--layout</c>.</summary>
-    public static readonly string[] AcceptedLayouts = ["grid", "square"];
+    public static readonly string[] AcceptedLayouts = ["grid", "square", "masonry"];
 
     /// <summary>
     /// The image options, or the error for an invalid fit or layout (the config's are checked
@@ -48,12 +48,14 @@ internal static class ImageOptionsFactory
     {
         var defaults = new ImageOptions();
         bool recursive = settings.Recursive || (image?.Recursive ?? defaults.Recursive);
-        bool all = settings.AllImages || (image?.All ?? defaults.Selection == ImageSelection.All);
+        // Masonry has no fixed number of cells to sample for, so it takes every image unless the
+        // config explicitly says otherwise.
+        bool all = settings.AllImages || (image?.All ?? layout is MasonryLayout);
 
         return defaults with
         {
-            // Square cells only make sense cropped, so the layout wins over a configured fit.
-            Fit = layout is SquareLayout ? ImageFit.Cover : fit.GetOrElse(defaults.Fit),
+            // Square and masonry cells are filled, so the layout wins over a configured fit.
+            Fit = layout is SquareLayout or MasonryLayout ? ImageFit.Cover : fit.GetOrElse(defaults.Fit),
             Layout = layout,
             Recursive = recursive,
             Selection = all ? ImageSelection.All : ImageSelection.Sample,
@@ -83,19 +85,23 @@ internal static class ImageOptionsFactory
         {
             "grid" => new GridLayout(),
             "square" => new SquareLayout(),
+            "masonry" => new MasonryLayout(),
             _ => Option<ImageLayout>.None,
         };
 
-    /// <summary>The square layout fixes the cell shape, so asking for another one is a mistake.</summary>
+    /// <summary>Square and masonry fix the cell shape, so asking for another one is a mistake.</summary>
     private static Either<string, ImageLayout> RejectOverriddenCellShape(ImageLayout layout, CliSettings settings)
         => (layout, settings) switch
         {
-            (SquareLayout, { Fit: not null }) => Either<string, ImageLayout>.Left(
-                "--fit cannot be combined with --layout square: square cells are always cropped to fill."),
-            (SquareLayout, { AspectRatio: not null }) => Either<string, ImageLayout>.Left(
-                "--aspect cannot be combined with --layout square: square cells are always 1:1."),
+            (SquareLayout, { Fit: not null }) => CellShapeError("--fit", "square", "square cells are always cropped to fill"),
+            (SquareLayout, { AspectRatio: not null }) => CellShapeError("--aspect", "square", "square cells are always 1:1"),
+            (MasonryLayout, { Fit: not null }) => CellShapeError("--fit", "masonry", "every image keeps its own proportions"),
+            (MasonryLayout, { AspectRatio: not null }) => CellShapeError("--aspect", "masonry", "every image keeps its own proportions"),
             _ => Either<string, ImageLayout>.Right(layout),
         };
+
+    private static Either<string, ImageLayout> CellShapeError(string option, string layout, string reason)
+        => Either<string, ImageLayout>.Left($"{option} cannot be combined with --layout {layout}: {reason}.");
 
     private static string FitError(string value, string source)
         => $"Invalid fit '{value}' in {source}. Expected one of: {string.Join(", ", AcceptedFits)}.";
