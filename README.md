@@ -220,6 +220,9 @@ photos.Caption = image => Path.GetFileNameWithoutExtension(image.Path);
 // Cells are uniform, so images that do not match are letterboxed (default),
 // cropped, or stretched:
 var cropped = ImageCollection.FromFolder("photos", loader: new SkiaImageLoader(ImageFit.Cover));
+
+// Square cells, cropped to fill (with the default loader), whatever AspectRatio says:
+photos.Layout = new SquareLayout();
 ```
 
 Implement `IImageLoader` (or `IImageInfoProvider`) to plug in a different decoder, exactly like
@@ -249,6 +252,9 @@ vcs holiday/                          # one sheet from the folder -> holiday.png
 vcs holiday/ --recursive --all        # every image, subfolders included
 vcs holiday/ --fit cover -c 5 -r 4    # crop to fill the cells instead of letterboxing
 vcs holiday/*.jpg -o summer.jpg -f jpg
+vcs holiday/ --no-header --gap 0      # just the pictures, edge to edge
+vcs holiday/ --layout square          # square cells, cropped to fill
+vcs holiday/ --layout square --corner-radius 16 --border-width 3 --border-color "#ffffff"
 ```
 
 Each video and each folder produces its own sheet; loose image files are combined into a single
@@ -257,12 +263,13 @@ PowerShell as it does in a POSIX shell.
 
 | | Video | Images |
 | --- | :---: | :---: |
-| `--columns`, `--rows`, `--width`, `--height`, `--aspect` | ✅ | ✅ |
+| `--columns`, `--rows`, `--width`, `--height`, `--aspect`, `--padding` | ✅ | ✅ |
 | `--format`, `--output`, `--title`, `--signature` | ✅ | ✅ |
 | `--timestamp` (caption: time index / file name) | ✅ | ✅ |
-| `--polaroid`, `--shadow` | ✅ | ✅ |
+| `--polaroid`, `--shadow`, `--header` | ✅ | ✅ |
+| `--corner-radius`, `--border-width`, `--border-color` | ✅ | ✅ |
 | `--interval`, `--from`, `--to`, `--highlight` | ✅ | — |
-| `--recursive`, `--fit`, `--all` | — | ✅ |
+| `--recursive`, `--fit`, `--all`, `--layout` | — | ✅ |
 
 Using an option against the wrong kind of input is an error rather than a silent no-op, unless the
 run mixes both — `vcs clip.mp4 holiday/ -i 2m` is fine, and the interval applies to the video.

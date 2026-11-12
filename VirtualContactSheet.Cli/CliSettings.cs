@@ -52,6 +52,22 @@ internal sealed record CliSettings
 
     public bool UseShadow { get; init; }
 
+    public bool UseHeader { get; init; }
+
+    public bool NoHeader { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? Padding { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? CornerRadius { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? BorderWidth { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public string? BorderColor { get; init; }
+
     public bool NoShadow { get; init; }
 
     /// <summary>Recurse into subfolders of an image folder.</summary>
@@ -59,6 +75,9 @@ internal sealed record CliSettings
 
     /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
     public string? Fit { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public string? Layout { get; init; }
 
     /// <summary>Render every image rather than sampling the grid capacity.</summary>
     public bool AllImages { get; init; }

@@ -16,6 +16,8 @@ internal sealed class ImageConfig
 {
     public string? Fit { get; set; }
 
+    public string? Layout { get; set; }
+
     public bool? Recursive { get; set; }
 
     public bool? All { get; set; }
@@ -44,6 +46,8 @@ internal sealed class FilterConfig
 
     public bool? Shadow { get; set; }
 
+    public bool? Header { get; set; }
+
     public bool? BlankEvasion { get; set; }
 
     public double? BlankThreshold { get; set; }
@@ -62,6 +66,18 @@ internal sealed class StyleConfig
     public BackgroundConfig? Contact { get; set; }
 
     public BackgroundConfig? Highlight { get; set; }
+
+    public ThumbnailStyleConfig? Thumbnail { get; set; }
+}
+
+/// <summary>The <c>[style.thumbnail]</c> section: how each thumbnail is framed.</summary>
+internal sealed class ThumbnailStyleConfig
+{
+    public int? CornerRadius { get; set; }
+
+    public int? BorderWidth { get; set; }
+
+    public string? BorderColor { get; set; }
 }
 
 internal sealed class TextStyleConfig

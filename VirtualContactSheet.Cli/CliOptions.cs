@@ -47,6 +47,11 @@ internal sealed class CliOptions
         Description = "Aspect ratio override: float (1.778) or fraction (16/9).",
     };
 
+    private readonly CommandLine.Option<int?> _padding = new("--padding", "--gap")
+    {
+        Description = "Space between thumbnails and around the grid, in pixels (default: 8).",
+    };
+
     // ── Time options ─────────────────────────────────────────────────────────────
     private readonly CommandLine.Option<TimeIndex?> _interval = TimeIndexOption("--interval", "-i", "Capture interval (e.g. 3m30, 90, 1:22).");
 
@@ -69,6 +74,10 @@ internal sealed class CliOptions
     private readonly CommandLine.Option<string?> _signature = new("--signature", "-s") { Description = "Footer signature text." };
 
     private readonly CommandLine.Option<bool> _noSignature = new("--no-signature") { Description = "Remove footer signature." };
+
+    private readonly CommandLine.Option<bool> _header = new("--header") { Description = "Show the metadata header (default: on)." };
+
+    private readonly CommandLine.Option<bool> _noHeader = new("--no-header") { Description = "Hide the metadata header." };
 
     // ── Highlight frames ─────────────────────────────────────────────────────────
     private readonly CommandLine.Option<string[]> _highlight = new("--highlight", "-l")
@@ -93,6 +102,21 @@ internal sealed class CliOptions
 
     private readonly CommandLine.Option<bool> _noShadow = new("--no-shadow") { Description = "Disable drop shadow." };
 
+    private readonly CommandLine.Option<int?> _cornerRadius = new("--corner-radius")
+    {
+        Description = "Round the thumbnail corners with this radius in pixels (default: 0).",
+    };
+
+    private readonly CommandLine.Option<int?> _borderWidth = new("--border-width")
+    {
+        Description = "Draw a border of this width in pixels inside each thumbnail's edge (default: 0).",
+    };
+
+    private readonly CommandLine.Option<string?> _borderColor = new("--border-color")
+    {
+        Description = "Border color as hex: #rrggbb or #rrggbbaa (default: #000000).",
+    };
+
     // ── Image options ────────────────────────────────────────────────────────────
     private readonly CommandLine.Option<bool> _recursive = new("--recursive")
     {
@@ -100,6 +124,8 @@ internal sealed class CliOptions
     };
 
     private readonly CommandLine.Option<string?> _fit = CreateFitOption();
+
+    private readonly CommandLine.Option<string?> _layout = CreateLayoutOption();
 
     private readonly CommandLine.Option<bool> _allImages = new("--all")
     {
@@ -126,15 +152,17 @@ internal sealed class CliOptions
         => new("Virtual Contact Sheet — generates contact sheets from video files or from folders of images.")
         {
             _files,
-            _columns, _rows, _width, _height, _aspect,
+            _columns, _rows, _width, _height, _aspect, _padding,
             _interval, _from, _to,
             _output, _format,
             _title, _signature, _noSignature,
+            _header, _noHeader,
             _highlight,
             _timestamp, _noTimestamp,
             _polaroid, _noPolaroid,
             _shadow, _noShadow,
-            _recursive, _fit, _allImages,
+            _cornerRadius, _borderWidth, _borderColor,
+            _recursive, _fit, _allImages, _layout,
             _config, _ffmpegFolder, _quiet, _continue,
         };
 
@@ -153,6 +181,7 @@ internal sealed class CliOptions
         Width = parse.GetResult(_width) is not null ? parse.GetValue(_width) : null,
         Height = parse.GetValue(_height),
         AspectRatio = parse.GetValue(_aspect),
+        Padding = parse.GetValue(_padding),
         Format = parse.GetResult(_format) is not null ? parse.GetValue(_format) : null,
         Title = parse.GetValue(_title),
         Signature = parse.GetValue(_signature),
@@ -164,9 +193,15 @@ internal sealed class CliOptions
         NoPolaroid = parse.GetValue(_noPolaroid),
         UseShadow = parse.GetValue(_shadow),
         NoShadow = parse.GetValue(_noShadow),
+        CornerRadius = parse.GetValue(_cornerRadius),
+        BorderWidth = parse.GetValue(_borderWidth),
+        BorderColor = parse.GetValue(_borderColor),
+        UseHeader = parse.GetValue(_header),
+        NoHeader = parse.GetValue(_noHeader),
         Recursive = parse.GetValue(_recursive),
         Fit = parse.GetResult(_fit) is not null ? parse.GetValue(_fit) : null,
         AllImages = parse.GetValue(_allImages),
+        Layout = parse.GetResult(_layout) is not null ? parse.GetValue(_layout) : null,
         ConfigPath = parse.GetValue(_config),
         FfmpegFolder = parse.GetValue(_ffmpegFolder) ?? BundledBinaries.Detect(),
         Quiet = parse.GetValue(_quiet),
@@ -191,6 +226,16 @@ internal sealed class CliOptions
             Description = "How images that do not match the cell shape are fitted: contain, cover, stretch.",
         };
         opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedFits);
+        return opt;
+    }
+
+    private static CommandLine.Option<string?> CreateLayoutOption()
+    {
+        var opt = new CommandLine.Option<string?>("--layout")
+        {
+            Description = "How images are arranged: grid, square (square cells, cropped to fill). Image inputs only.",
+        };
+        opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedLayouts);
         return opt;
     }
 

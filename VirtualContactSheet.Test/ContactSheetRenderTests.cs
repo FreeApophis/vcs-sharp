@@ -223,6 +223,59 @@ public class ContactSheetRenderTests
     }
 
     // Text-free so the snapshot is portable: no fonts (the one cross-machine variable) participate.
+    [Fact]
+    public void Render_CornerRadius_RoundsTheThumbnailCorners()
+    {
+        var options = TextFreeOptions();
+        options.CornerRadius = 20;
+
+        using var decoded = RenderGrid(options);
+
+        // The first thumbnail spans (2,2)-(162,92): its corner is cut away, its centre is not.
+        Assert.Equal(options.SheetBackground, decoded.GetPixel(2, 2));
+        Assert.Equal(TestFrames.Palette[0], decoded.GetPixel(82, 47));
+    }
+
+    [Fact]
+    public void Render_CornerRadius_ClipsTheCaptionToo()
+    {
+        var options = TextFreeOptions();
+        options.CornerRadius = 20;
+        options.Timestamp = true;
+
+        using var decoded = RenderGrid(options);
+
+        // The caption box sits 4px inside the bottom-right corner, which the radius cuts deeper.
+        Assert.Equal(options.SheetBackground, decoded.GetPixel(157, 87));
+    }
+
+    [Fact]
+    public void Render_Border_IsDrawnInsideTheThumbnailEdge()
+    {
+        var options = TextFreeOptions();
+        options.BorderWidth = 3;
+        options.BorderColor = SKColors.Blue;
+
+        using var decoded = RenderGrid(options);
+
+        Assert.Equal(650, decoded.Width); // the layout does not grow
+        Assert.Equal(SKColors.Blue, decoded.GetPixel(2 + 1, 47));
+        Assert.Equal(TestFrames.Palette[0], decoded.GetPixel(2 + 5, 47));
+    }
+
+    private static SKBitmap RenderGrid(ContactSheetOptions options)
+    {
+        var thumbnails = TestFrames.Grid(8);
+        try
+        {
+            return SKBitmap.Decode(new ContactSheet(options).Render(thumbnails));
+        }
+        finally
+        {
+            TestFrames.DisposeAll(thumbnails);
+        }
+    }
+
     private static ContactSheetOptions TextFreeOptions() => new()
     {
         Columns = 4,

@@ -29,7 +29,13 @@ public sealed class ContactSheet
 
     private sealed record ColorRect(SKRect Bounds, SKColor Color) : Element;
 
-    private sealed record BlurShadow(SKRect Bounds, float Blur) : Element;
+    private sealed record BlurShadow(SKRect Bounds, float Blur, float Radius) : Element;
+
+    /// <summary>Draws <paramref name="Inner"/> clipped to a rounded rectangle.</summary>
+    private sealed record RoundedClip(SKRect Bounds, float Radius, IReadOnlyList<Element> Inner) : Element;
+
+    /// <summary>A border stroked just inside <paramref name="Bounds"/>.</summary>
+    private sealed record Border(SKRect Bounds, float Radius, float Width, SKColor Color) : Element;
 
     private sealed record BitmapEl(SKBitmap Image, SKRect Dest) : Element;
 
@@ -75,7 +81,7 @@ public sealed class ContactSheet
                     break;
                 }
 
-            case BlurShadow(var b, var blur):
+            case BlurShadow(var b, var blur, var radius):
                 {
                     using var p = new SKPaint
                     {
@@ -83,7 +89,32 @@ public sealed class ContactSheet
                         ImageFilter = SKImageFilter.CreateBlur(blur, blur),
                         IsAntialias = true,
                     };
-                    canvas.DrawRect(b, p);
+                    canvas.DrawRoundRect(b, radius, radius, p);
+                    break;
+                }
+
+            case RoundedClip(var b, var radius, var inner):
+                {
+                    canvas.Save();
+                    using var clip = new SKRoundRect(b, radius);
+                    canvas.ClipRoundRect(clip, SKClipOperation.Intersect, antialias: true);
+                    foreach (var e in inner)
+                    {
+                        Draw(canvas, e);
+                    }
+
+                    canvas.Restore();
+                    break;
+                }
+
+            case Border(var b, var radius, var width, var color):
+                {
+                    using var p = new SKPaint { Color = color, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = width };
+
+                    // Inset by half the stroke, so the whole border lies inside the thumbnail.
+                    var inset = SKRect.Inflate(b, -width / 2f, -width / 2f);
+                    float r = Math.Max(0, radius - (width / 2f));
+                    canvas.DrawRoundRect(inset, r, r, p);
                     break;
                 }
 
@@ -298,15 +329,15 @@ public sealed class ContactSheet
         float imgX,
         float imgY)
     {
+        var picture = SKRect.Create(imgX, imgY, grid.ThumbW, grid.ThumbH);
+        float radius = Math.Max(0, o.CornerRadius);
+
         if (shadow > 0)
         {
-            float sx = o.Polaroid ? cellX : imgX;
-            float sy = o.Polaroid ? cellY : imgY;
-            float sw = o.Polaroid ? grid.CellW : grid.ThumbW;
-            float sh = o.Polaroid ? grid.CellH : grid.ThumbH;
-            yield return new BlurShadow(
-                SKRect.Create(sx + (shadow / 2f), sy + (shadow / 2f), sw, sh),
-                shadow / 2f);
+            // The shadow follows the outermost shape: the square polaroid card, or the picture itself.
+            var caster = o.Polaroid ? SKRect.Create(cellX, cellY, grid.CellW, grid.CellH) : picture;
+            caster.Offset(shadow / 2f, shadow / 2f);
+            yield return new BlurShadow(caster, shadow / 2f, o.Polaroid ? 0 : radius);
         }
 
         if (o.Polaroid)
@@ -314,14 +345,30 @@ public sealed class ContactSheet
             yield return new ColorRect(SKRect.Create(cellX, cellY, grid.CellW, grid.CellH), SKColors.White);
         }
 
-        yield return new BitmapEl(thumb.Image, SKRect.Create(imgX, imgY, grid.ThumbW, grid.ThumbH));
+        Element[] content =
+        [
+            new BitmapEl(thumb.Image, picture),
+            .. o.Timestamp && !string.IsNullOrEmpty(thumb.Caption)
+                ? CaptionElements(thumb.Caption, tsFont, o, imgX, imgY, grid.ThumbW, grid.ThumbH)
+                : [],
+        ];
 
-        if (o.Timestamp && !string.IsNullOrEmpty(thumb.Caption))
+        // The caption is clipped with the picture, so it never pokes out of a rounded corner.
+        if (radius > 0)
         {
-            foreach (var e in CaptionElements(thumb.Caption, tsFont, o, imgX, imgY, grid.ThumbW, grid.ThumbH))
+            yield return new RoundedClip(picture, radius, content);
+        }
+        else
+        {
+            foreach (var e in content)
             {
                 yield return e;
             }
+        }
+
+        if (o.BorderWidth > 0)
+        {
+            yield return new Border(picture, radius, o.BorderWidth, o.BorderColor);
         }
     }
 

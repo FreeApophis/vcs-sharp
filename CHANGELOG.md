@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--no-header` (and `--header`) to hide or show the metadata header, also as `header` in the
+  `[filter]` config section.
+- `--padding` (alias `--gap`) sets the space between thumbnails and around the grid, which was
+  only configurable as `padding` in `[main]` before. A negative value is an error.
+- `--layout square` for image inputs: square cells, cropped to fill, also as `layout` in the
+  `[image]` config section. Combining it with `--fit` or `--aspect` is an error, since the layout
+  fixes both. In the library, set `ImageCollection.Layout = new SquareLayout()`.
+- Rounded corners and borders for thumbnails, for video and images: `--corner-radius`,
+  `--border-width` and `--border-color`, or `corner_radius`, `border_width` and `border_color` in
+  a new `[style.thumbnail]` config section (`ContactSheetOptions.CornerRadius`, `BorderWidth`,
+  `BorderColor` in the library). The caption is clipped with the corners, the border lies inside
+  the thumbnail so the layout does not change, and the drop shadow follows the rounded shape.
+
 ## [3.0.0] - 2026-11-12
 
 ### Changed

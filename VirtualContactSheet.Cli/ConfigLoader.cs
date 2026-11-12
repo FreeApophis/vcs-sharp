@@ -82,6 +82,7 @@ internal static class ConfigLoader
             target.Filter.Timestamp = filter.Timestamp ?? target.Filter.Timestamp;
             target.Filter.Polaroid = filter.Polaroid ?? target.Filter.Polaroid;
             target.Filter.Shadow = filter.Shadow ?? target.Filter.Shadow;
+            target.Filter.Header = filter.Header ?? target.Filter.Header;
             target.Filter.BlankEvasion = filter.BlankEvasion ?? target.Filter.BlankEvasion;
             target.Filter.BlankThreshold = filter.BlankThreshold ?? target.Filter.BlankThreshold;
         }
@@ -92,6 +93,7 @@ internal static class ConfigLoader
             target.Image.Fit = image.Fit ?? target.Image.Fit;
             target.Image.Recursive = image.Recursive ?? target.Image.Recursive;
             target.Image.All = image.All ?? target.Image.All;
+            target.Image.Layout = image.Layout ?? target.Image.Layout;
         }
 
         if (source.Style is { } style)
@@ -103,8 +105,19 @@ internal static class ConfigLoader
             target.Style.Signature = MergeTextStyle(target.Style.Signature, style.Signature);
             target.Style.Contact = MergeBackground(target.Style.Contact, style.Contact);
             target.Style.Highlight = MergeBackground(target.Style.Highlight, style.Highlight);
+            target.Style.Thumbnail = MergeThumbnailStyle(target.Style.Thumbnail, style.Thumbnail);
         }
     }
+
+    private static ThumbnailStyleConfig? MergeThumbnailStyle(ThumbnailStyleConfig? target, ThumbnailStyleConfig? source)
+        => source is null
+            ? target
+            : new ThumbnailStyleConfig
+            {
+                CornerRadius = source.CornerRadius ?? target?.CornerRadius,
+                BorderWidth = source.BorderWidth ?? target?.BorderWidth,
+                BorderColor = source.BorderColor ?? target?.BorderColor,
+            };
 
     private static TextStyleConfig? MergeTextStyle(TextStyleConfig? target, TextStyleConfig? source)
     {

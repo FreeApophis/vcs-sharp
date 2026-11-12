@@ -101,7 +101,8 @@ Key source files in the library:
 Shared:
 - `ContactSheet.cs` — SkiaSharp grid layout and rendering. `ContactSheet.Thumbnail` is
   medium-agnostic: an `SKBitmap` plus an optional `string? Caption` (long captions are ellipsized)
-- `ContactSheetOptions.cs` — all grid/style settings (`Columns`, `Rows`, `Interval`, `Polaroid`, `SoftShadow`, …)
+- `ContactSheetOptions.cs` — all grid/style settings (`Columns`, `Rows`, `Interval`, `Polaroid`, `SoftShadow`,
+  `CornerRadius`, `BorderWidth`, …)
 - `TimeIndex.cs` — flexible time parser ("3m30", "1:22", "90", "1h2m3s")
 - `CaptureException.cs` — thrown when a frame capture or an image load fails
 - `MissingFrame.cs` — gray placeholder with a circled warning icon, drawn in the cell of a video
@@ -124,6 +125,8 @@ Shared:
 - `ImageOrientation.cs` — EXIF origin → upright dimensions + canvas matrix
 - `ImageHeaderBuilder.cs` — two-column metadata header for a collection
 - `ImageSelection.cs` — `Sample` (evenly spread over the collection) vs `All`
+- `ImageLayout.cs` — closed hierarchy for how images are arranged: `GridLayout` (default),
+  `SquareLayout` (square cells; the default loader then crops with `ImageFit.Cover`)
 
 `ContactSheetOptions` is shared; its time-based members (`Interval`, `From`, `To`, `Highlights`,
 blank-frame evasion) apply to video only, and `Timestamp` toggles the caption overlay for both.
