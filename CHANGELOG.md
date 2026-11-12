@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Library: placing the pictures is now separate from drawing them. `GridPlanner.Plan` returns a
+  `BodyLayout` (sheet body size plus one rectangle per picture) from a `LayoutSpacing`
+  (`LayoutSpacing.For(options)`), and `ContactSheet.Render(thumbnails, body, title)` draws any
+  such layout. `Render(thumbnails, title)` still renders the regular grid, unchanged.
+- `--layout masonry` for image inputs: justified rows in reading order that keep every image's
+  proportions, like a photo gallery. The sheet is as wide as a grid of `--columns`; rows aim at
+  `--height`, or by default at the height that fits about `--columns` images of median shape, and
+  each full row is scaled to end exactly at the right edge. Masonry uses every image unless
+  `all = false` is set in `[image]`; `--fit` and `--aspect` are rejected. In the library:
+  `ImageCollection.Layout = new MasonryLayout()`, planned by `MasonryPlanner.Rows`.
+- `--flow columns` for masonry: `--columns` columns of `--width`, each image placed in the
+  currently shortest column. `--column-ends cropped` (the default) ends every column at the same
+  height by trimming each of its images a little; `--column-ends ragged` keeps the natural
+  heights. Also as `flow` and `column_ends` in `[image]`. `--flow` without `--layout masonry`,
+  `--column-ends` without `--flow columns`, and `--height` with `--flow columns` are errors. In the
+  library: `new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged)`, planned by
+  `MasonryPlanner.Columns`.
+
+### Added
+
 - `--no-header` (and `--header`) to hide or show the metadata header, also as `header` in the
   `[filter]` config section.
 - `--padding` (alias `--gap`) sets the space between thumbnails and around the grid, which was

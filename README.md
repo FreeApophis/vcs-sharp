@@ -223,6 +223,15 @@ var cropped = ImageCollection.FromFolder("photos", loader: new SkiaImageLoader(I
 
 // Square cells, cropped to fill (with the default loader), whatever AspectRatio says:
 photos.Layout = new SquareLayout();
+
+// Justified rows that keep each image's proportions. The sheet is as wide as a grid of Columns;
+// rows aim at ThumbnailHeight, or by default at about Columns images of median shape per row.
+photos.Layout = new MasonryLayout();
+photos.Selection = ImageSelection.All; // masonry has no cell count to sample for
+
+// Or Columns columns of ThumbnailWidth, each image into the shortest one. Cropped (default) ends
+// every column evenly by trimming each image a little; Ragged keeps the natural heights.
+photos.Layout = new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged);
 ```
 
 Implement `IImageLoader` (or `IImageInfoProvider`) to plug in a different decoder, exactly like
@@ -254,6 +263,9 @@ vcs holiday/ --fit cover -c 5 -r 4    # crop to fill the cells instead of letter
 vcs holiday/*.jpg -o summer.jpg -f jpg
 vcs holiday/ --no-header --gap 0      # just the pictures, edge to edge
 vcs holiday/ --layout square          # square cells, cropped to fill
+vcs holiday/ --layout masonry         # justified rows, every image in its own proportions
+vcs holiday/ --layout masonry --flow columns                       # pin board, columns end evenly
+vcs holiday/ --layout masonry --flow columns --column-ends ragged  # ... or at their natural heights
 vcs holiday/ --layout square --corner-radius 16 --border-width 3 --border-color "#ffffff"
 ```
 
@@ -269,7 +281,7 @@ PowerShell as it does in a POSIX shell.
 | `--polaroid`, `--shadow`, `--header` | ✅ | ✅ |
 | `--corner-radius`, `--border-width`, `--border-color` | ✅ | ✅ |
 | `--interval`, `--from`, `--to`, `--highlight` | ✅ | — |
-| `--recursive`, `--fit`, `--all`, `--layout` | — | ✅ |
+| `--recursive`, `--fit`, `--all`, `--layout`, `--flow`, `--column-ends` | — | ✅ |
 
 Using an option against the wrong kind of input is an error rather than a silent no-op, unless the
 run mixes both — `vcs clip.mp4 holiday/ -i 2m` is fine, and the interval applies to the video.

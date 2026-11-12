@@ -71,22 +71,21 @@ internal sealed class RecordingProgress : IProgress<double>
 /// <summary>An <see cref="IImageInfoProvider"/> returning fixed metadata without reading files.</summary>
 internal sealed class FakeImageProbe : IImageInfoProvider
 {
-    private readonly int _width;
-
-    private readonly int _height;
+    private readonly Func<string, (int Width, int Height)> _size;
 
     public FakeImageProbe(int width = 160, int height = 90)
-    {
-        _width = width;
-        _height = height;
-    }
+        => _size = _ => (width, height);
+
+    /// <summary>A probe that reports each file at its own size, e.g. for layouts that keep proportions.</summary>
+    public FakeImageProbe(IReadOnlyDictionary<string, (int Width, int Height)> sizes)
+        => _size = path => sizes[path];
 
     public Task<ImageInfo> ProbeAsync(string path, CancellationToken ct = default)
         => Task.FromResult(new ImageInfo
         {
             Path = path,
-            Width = _width,
-            Height = _height,
+            Width = _size(path).Width,
+            Height = _size(path).Height,
             FileSize = 2048,
             Extension = Path.GetExtension(path).TrimStart('.').ToLowerInvariant(),
             Format = "Png",

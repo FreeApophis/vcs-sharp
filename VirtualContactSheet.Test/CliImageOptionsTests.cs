@@ -99,21 +99,44 @@ public class CliImageOptionsTests
     {
         var error = Assert.Left(ImageOptionsFactory.Create(Settings() with { Layout = "hexagon" }, new VcsConfig()));
 
-        Assert.Contains("grid, square", error);
+        Assert.Contains("grid, square, masonry", error);
     }
 
     [Theory]
-    [InlineData("--fit")]
-    [InlineData("--aspect")]
-    public void Layout_SquareWithACellShapeOption_IsRejected(string option)
+    [InlineData("square", "--fit")]
+    [InlineData("square", "--aspect")]
+    [InlineData("masonry", "--fit")]
+    [InlineData("masonry", "--aspect")]
+    public void Layout_WithACellShapeOptionItFixes_IsRejected(string layout, string option)
     {
         var settings = option == "--fit"
-            ? Settings() with { Layout = "square", Fit = "contain" }
-            : Settings() with { Layout = "square", AspectRatio = "16/9" };
+            ? Settings() with { Layout = layout, Fit = "contain" }
+            : Settings() with { Layout = layout, AspectRatio = "16/9" };
 
         var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
 
         Assert.Contains(option, error);
+        Assert.Contains(layout, error);
+    }
+
+    [Fact]
+    public void Layout_Masonry_UsesEveryImageAndCrops()
+    {
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "masonry" }, new VcsConfig()));
+
+        Assert.IsType<MasonryLayout>(options.Layout);
+        Assert.Equal(ImageSelection.All, options.Selection);
+        Assert.Equal(ImageFit.Cover, options.Fit);
+    }
+
+    [Fact]
+    public void Layout_MasonryWithAllSwitchedOffInConfig_Samples()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { All = false } };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "masonry" }, config));
+
+        Assert.Equal(ImageSelection.Sample, options.Selection);
     }
 
     [Fact]
@@ -140,6 +163,70 @@ public class CliImageOptionsTests
         var collection = ImageOptionsFactory.CreateCollection(ResolveImages(folder.Root), new ImageOptions { Layout = new SquareLayout() });
 
         Assert.IsType<SquareLayout>(collection.Layout);
+    }
+
+    [Fact]
+    public void Masonry_FlowAndColumnEnds_AreApplied()
+    {
+        var settings = Settings() with { Layout = "masonry", Flow = "Columns", ColumnEnds = "ragged" };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.Equal(new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged), options.Layout);
+    }
+
+    [Fact]
+    public void Masonry_ColumnsEndCroppedByDefault()
+    {
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "masonry", Flow = "columns" }, new VcsConfig()));
+
+        Assert.Equal(new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Cropped), options.Layout);
+    }
+
+    [Fact]
+    public void Masonry_FlowAndColumnEndsFromConfig_AreApplied()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { Layout = "masonry", Flow = "columns", ColumnEnds = "ragged" } };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), config));
+
+        Assert.Equal(new MasonryLayout(MasonryFlow.Columns, ColumnEnds.Ragged), options.Layout);
+    }
+
+    [Fact]
+    public void Flow_InConfigWithoutMasonry_IsIgnored()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { Flow = "columns" } };
+
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), config));
+
+        Assert.IsType<GridLayout>(options.Layout);
+    }
+
+    [Theory]
+    [InlineData("grid", "columns", null, 0, "--flow")]
+    [InlineData("masonry", "rows", "ragged", 0, "--column-ends")]
+    [InlineData("masonry", null, "ragged", 0, "--column-ends")]
+    [InlineData("masonry", "columns", null, 200, "--height")]
+    public void MasonryOption_ThatDoesNotApply_IsRejected(string layout, string? flow, string? ends, int height, string option)
+    {
+        var settings = Settings() with { Layout = layout, Flow = flow, ColumnEnds = ends, Height = height };
+
+        var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.StartsWith(option, error);
+    }
+
+    [Theory]
+    [InlineData("diagonal", null, "rows, columns")]
+    [InlineData(null, "jagged", "cropped, ragged")]
+    public void Masonry_InvalidFlowOrColumnEnds_ReportsTheAcceptedValues(string? flow, string? ends, string accepted)
+    {
+        var settings = Settings() with { Layout = "masonry", Flow = flow ?? "columns", ColumnEnds = ends };
+
+        var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.Contains(accepted, error);
     }
 
     [Fact]

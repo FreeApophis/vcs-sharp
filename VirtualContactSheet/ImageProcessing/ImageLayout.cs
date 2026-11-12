@@ -8,3 +8,13 @@ public sealed record GridLayout : ImageLayout;
 
 /// <summary>A grid of square cells.</summary>
 public sealed record SquareLayout : ImageLayout;
+
+/// <summary>
+/// A layout that keeps every image's proportions. The sheet is as wide as a grid of
+/// <see cref="ContactSheetOptions.Columns"/>. With <see cref="MasonryFlow.Rows"/> it is filled with
+/// justified rows aimed at <see cref="ContactSheetOptions.ThumbnailHeight"/>, or by default at the
+/// height that fits about <c>Columns</c> images of median shape per row. With
+/// <see cref="MasonryFlow.Columns"/> it is <c>Columns</c> columns of
+/// <see cref="ContactSheetOptions.ThumbnailWidth"/>, whose bottoms <paramref name="Ends"/> finishes.
+/// </summary>
+public sealed record MasonryLayout(MasonryFlow Flow = MasonryFlow.Rows, ColumnEnds Ends = ColumnEnds.Cropped) : ImageLayout;

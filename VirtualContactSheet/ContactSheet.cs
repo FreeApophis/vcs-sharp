@@ -45,8 +45,31 @@ public sealed class ContactSheet
 
     private sealed record GridSpec(int ThumbW, int ThumbH, int CellW, int CellH, int Margin, int Columns);
 
+    /// <summary>Renders the thumbnails as a regular grid, every cell the size of the first thumbnail.</summary>
     public byte[] Render(IReadOnlyList<Thumbnail> thumbnails, string? title = null)
     {
+        var regular = thumbnails.Where(t => !t.IsHighlight).ToList();
+        var sample = SampleImage(thumbnails);
+        var body = GridPlanner.Plan(regular.Count, _options.Columns, new SKSizeI(sample.Width, sample.Height), LayoutSpacing.For(_options));
+
+        return Render(thumbnails, body, title);
+    }
+
+    /// <summary>
+    /// Renders the regular (non-highlight) thumbnails at the places <paramref name="body"/> gives
+    /// them, in order; the sheet is as wide as the body. Plan the body with the spacing from
+    /// <see cref="LayoutSpacing.For"/>, so there is room for shadows and polaroid frames.
+    /// </summary>
+    public byte[] Render(IReadOnlyList<Thumbnail> thumbnails, BodyLayout body, string? title = null)
+    {
+        int regularCount = thumbnails.Count(t => !t.IsHighlight);
+        if (body.Pictures.Count != regularCount)
+        {
+            throw new ArgumentException(
+                $"The body layout places {body.Pictures.Count} pictures, but there are {regularCount} thumbnails.",
+                nameof(body));
+        }
+
         title ??= _options.Title;
 
         using var titleFont = CreateFont(_options.TitleStyle);
@@ -54,7 +77,7 @@ public sealed class ContactSheet
         using var sigFont = CreateFont(_options.SignatureStyle);
         using var tsFont = CreateFont(_options.TimestampStyle);
 
-        var sheet = Compose(thumbnails, title, titleFont, headerFont, sigFont, tsFont);
+        var sheet = Compose(thumbnails, body, title, titleFont, headerFont, sigFont, tsFont);
 
         using var surface = SKSurface.Create(new SKImageInfo(sheet.Width, sheet.Height));
         var canvas = surface.Canvas;
@@ -133,8 +156,13 @@ public sealed class ContactSheet
         }
     }
 
+    private static SKBitmap SampleImage(IReadOnlyList<Thumbnail> thumbnails)
+        => (thumbnails.FirstOrDefault(t => !t.IsHighlight) ?? thumbnails.FirstOrDefault())?.Image
+           ?? throw new InvalidOperationException("No thumbnails to render.");
+
     private Sheet Compose(
         IReadOnlyList<Thumbnail> thumbnails,
+        BodyLayout body,
         string? title,
         SKFont titleFont,
         SKFont headerFont,
@@ -146,21 +174,9 @@ public sealed class ContactSheet
         var regular = thumbnails.Where(t => !t.IsHighlight).ToList();
 
         int columns = Math.Max(1, o.Columns);
-        int padding = Math.Max(0, o.Padding);
-        int shadow = o.SoftShadow ? Math.Max(0, o.ShadowSize) : 0;
-        int polaroidPad = o.Polaroid ? 12 : 0;
-        int polaroidBot = o.Polaroid ? 36 : 0;
-
-        var sample = (regular.FirstOrDefault() ?? highlights.FirstOrDefault())?.Image
-                     ?? throw new InvalidOperationException("No thumbnails to render.");
-
-        var grid = new GridSpec(
-            ThumbW: sample.Width,
-            ThumbH: sample.Height,
-            CellW: sample.Width + (2 * polaroidPad),
-            CellH: sample.Height + polaroidPad + polaroidBot,
-            Margin: padding + shadow,
-            Columns: columns);
+        var spacing = LayoutSpacing.For(o);
+        int padding = spacing.Gap;
+        var sample = SampleImage(thumbnails);
 
         var header = o.ShowHeader ? (HeaderOverride ?? HeaderColumns.Empty) : HeaderColumns.Empty;
         int hdrRows = Math.Max(header.Left.Count, header.Right.Count);
@@ -171,35 +187,34 @@ public sealed class ContactSheet
             ? LineHeight(sigFont) + (2 * padding) + 6
             : 0f;
 
+        // Highlights are video frames, drawn at double size in a band of their own.
         var hlGrid = new GridSpec(
-            ThumbW: grid.ThumbW * 2,
-            ThumbH: grid.ThumbH * 2,
-            CellW: (grid.ThumbW * 2) + (2 * polaroidPad),
-            CellH: (grid.ThumbH * 2) + polaroidPad + polaroidBot,
-            Margin: grid.Margin,
+            ThumbW: sample.Width * 2,
+            ThumbH: sample.Height * 2,
+            CellW: (sample.Width * 2) + spacing.FrameWidth,
+            CellH: (sample.Height * 2) + spacing.FrameHeight,
+            Margin: spacing.Margin,
             Columns: columns);
 
         int hlRows = RowCount(highlights.Count, columns);
-        int regRows = RowCount(regular.Count, columns);
         float hlBandH = hlRows > 0
             ? (2 * hlGrid.Margin) + (hlRows * hlGrid.CellH) + ((hlRows - 1) * padding)
             : 0f;
-        float gridH = (2 * grid.Margin) + (regRows * grid.CellH) + ((regRows - 1) * padding);
 
-        int width = (2 * grid.Margin) + (columns * grid.CellW) + ((columns - 1) * padding);
-        int height = (int)Math.Ceiling(titleH + headerH + hlBandH + gridH + sigH);
+        int width = body.Width;
+        int height = (int)Math.Ceiling(titleH + headerH + hlBandH + body.Height + sigH);
 
         float titleY = 0f;
         float headerY = titleY + titleH;
         float hlY = headerY + headerH;
-        float gridY = hlY + hlBandH;
+        float bodyY = hlY + hlBandH;
         float sigY = height - sigH;
 
         var elements = Enumerable.Empty<Element>()
             .Concat(TitleBand(title, titleFont, o, width, titleY, titleH))
             .Concat(HeaderBand(header, headerFont, o, width, padding, headerY, headerH))
-            .Concat(HighlightBand(highlights, hlGrid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, width, hlY, hlBandH))
-            .Concat(GridBand(regular, grid, o, tsFont, padding, shadow, polaroidPad, polaroidBot, gridY))
+            .Concat(HighlightBand(highlights, hlGrid, o, tsFont, spacing, width, hlY, hlBandH))
+            .Concat(BodyBand(regular, body, o, tsFont, spacing, bodyY))
             .Concat(SignatureBand(o, sigFont, width, height, sigY, sigH));
 
         return new Sheet(width, height, [.. elements]);
@@ -262,10 +277,7 @@ public sealed class ContactSheet
         GridSpec hlGrid,
         ContactSheetOptions o,
         SKFont tsFont,
-        int padding,
-        int shadow,
-        int polaroidPad,
-        int polaroidBot,
+        LayoutSpacing spacing,
         int width,
         float y,
         float h)
@@ -281,16 +293,15 @@ public sealed class ContactSheet
         for (int row = 0; i < items.Count; row++)
         {
             int itemsInRow = Math.Min(hlGrid.Columns, items.Count - i);
-            float rowW = (itemsInRow * hlGrid.CellW) + ((itemsInRow - 1) * padding);
+            float rowW = (itemsInRow * hlGrid.CellW) + ((itemsInRow - 1) * spacing.Gap);
             float startX = (width - rowW) / 2f;
-            float rowY = y + hlGrid.Margin + (row * (hlGrid.CellH + padding));
+            float rowY = y + hlGrid.Margin + (row * (hlGrid.CellH + spacing.Gap));
 
             for (int col = 0; col < itemsInRow; col++, i++)
             {
-                float cellX = startX + (col * (hlGrid.CellW + padding));
-                float imgX = cellX + polaroidPad;
-                float imgY = rowY + polaroidPad;
-                foreach (var e in ThumbnailElements(items[i], hlGrid, o, tsFont, shadow, polaroidPad, cellX, rowY, imgX, imgY))
+                float cellX = startX + (col * (hlGrid.CellW + spacing.Gap));
+                var picture = SKRect.Create(cellX + spacing.FrameSide, rowY + spacing.FrameTop, hlGrid.ThumbW, hlGrid.ThumbH);
+                foreach (var e in ThumbnailElements(items[i], picture, o, tsFont, spacing))
                 {
                     yield return e;
                 }
@@ -298,58 +309,55 @@ public sealed class ContactSheet
         }
     }
 
-    private static IEnumerable<Element> GridBand(
+    private static IEnumerable<Element> BodyBand(
         IReadOnlyList<Thumbnail> items,
-        GridSpec grid,
+        BodyLayout body,
         ContactSheetOptions o,
         SKFont tsFont,
-        int padding,
-        int shadow,
-        int polaroidPad,
-        int polaroidBot,
-        float startY)
-        => items.SelectMany((thumb, i) =>
-        {
-            float cellX = grid.Margin + ((i % grid.Columns) * (grid.CellW + padding));
-            float cellY = startY + grid.Margin + ((i / grid.Columns) * (grid.CellH + padding));
-            float imgX = cellX + polaroidPad;
-            float imgY = cellY + polaroidPad;
-            return ThumbnailElements(thumb, grid, o, tsFont, shadow, polaroidPad, cellX, cellY, imgX, imgY);
-        });
+        LayoutSpacing spacing,
+        float y)
+        => items
+            .Zip(body.Pictures)
+            .SelectMany(pair => ThumbnailElements(
+                pair.First,
+                SKRect.Create(pair.Second.Left, pair.Second.Top + y, pair.Second.Width, pair.Second.Height),
+                o,
+                tsFont,
+                spacing));
 
     private static IEnumerable<Element> ThumbnailElements(
         Thumbnail thumb,
-        GridSpec grid,
+        SKRect picture,
         ContactSheetOptions o,
         SKFont tsFont,
-        int shadow,
-        int polaroidPad,
-        float cellX,
-        float cellY,
-        float imgX,
-        float imgY)
+        LayoutSpacing spacing)
     {
-        var picture = SKRect.Create(imgX, imgY, grid.ThumbW, grid.ThumbH);
+        int shadow = o.SoftShadow ? Math.Max(0, o.ShadowSize) : 0;
         float radius = Math.Max(0, o.CornerRadius);
+        var card = new SKRect(
+            picture.Left - spacing.FrameSide,
+            picture.Top - spacing.FrameTop,
+            picture.Right + spacing.FrameSide,
+            picture.Bottom + spacing.FrameBottom);
 
         if (shadow > 0)
         {
             // The shadow follows the outermost shape: the square polaroid card, or the picture itself.
-            var caster = o.Polaroid ? SKRect.Create(cellX, cellY, grid.CellW, grid.CellH) : picture;
+            var caster = o.Polaroid ? card : picture;
             caster.Offset(shadow / 2f, shadow / 2f);
             yield return new BlurShadow(caster, shadow / 2f, o.Polaroid ? 0 : radius);
         }
 
         if (o.Polaroid)
         {
-            yield return new ColorRect(SKRect.Create(cellX, cellY, grid.CellW, grid.CellH), SKColors.White);
+            yield return new ColorRect(card, SKColors.White);
         }
 
         Element[] content =
         [
             new BitmapEl(thumb.Image, picture),
             .. o.Timestamp && !string.IsNullOrEmpty(thumb.Caption)
-                ? CaptionElements(thumb.Caption, tsFont, o, imgX, imgY, grid.ThumbW, grid.ThumbH)
+                ? CaptionElements(thumb.Caption, tsFont, o, picture.Left, picture.Top, picture.Width, picture.Height)
                 : [],
         ];
 

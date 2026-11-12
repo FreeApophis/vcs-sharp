@@ -103,6 +103,9 @@ Shared:
   medium-agnostic: an `SKBitmap` plus an optional `string? Caption` (long captions are ellipsized)
 - `ContactSheetOptions.cs` — all grid/style settings (`Columns`, `Rows`, `Interval`, `Polaroid`, `SoftShadow`,
   `CornerRadius`, `BorderWidth`, …)
+- `BodyLayout.cs`, `LayoutSpacing.cs`, `GridPlanner.cs`, `MasonryPlanner.cs` — pure placement: a planner turns sizes
+  or aspect ratios plus spacing into one rectangle per picture; `ContactSheet.Render(thumbs, body)`
+  only draws. Test new layouts as numbers in, rectangles out
 - `TimeIndex.cs` — flexible time parser ("3m30", "1:22", "90", "1h2m3s")
 - `CaptureException.cs` — thrown when a frame capture or an image load fails
 - `MissingFrame.cs` — gray placeholder with a circled warning icon, drawn in the cell of a video
@@ -126,7 +129,9 @@ Shared:
 - `ImageHeaderBuilder.cs` — two-column metadata header for a collection
 - `ImageSelection.cs` — `Sample` (evenly spread over the collection) vs `All`
 - `ImageLayout.cs` — closed hierarchy for how images are arranged: `GridLayout` (default),
-  `SquareLayout` (square cells; the default loader then crops with `ImageFit.Cover`)
+  `SquareLayout` (square cells), `MasonryLayout(Flow, Ends)` (keeps proportions: justified rows,
+  or columns filled shortest-first with `ColumnEnds.Cropped`/`Ragged` bottoms; planned by
+  `MasonryPlanner`). For square and masonry the default loader crops with `ImageFit.Cover`
 
 `ContactSheetOptions` is shared; its time-based members (`Interval`, `From`, `To`, `Highlights`,
 blank-frame evasion) apply to video only, and `Timestamp` toggles the caption overlay for both.

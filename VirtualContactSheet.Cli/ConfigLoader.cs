@@ -94,6 +94,8 @@ internal static class ConfigLoader
             target.Image.Recursive = image.Recursive ?? target.Image.Recursive;
             target.Image.All = image.All ?? target.Image.All;
             target.Image.Layout = image.Layout ?? target.Image.Layout;
+            target.Image.Flow = image.Flow ?? target.Image.Flow;
+            target.Image.ColumnEnds = image.ColumnEnds ?? target.Image.ColumnEnds;
         }
 
         if (source.Style is { } style)
