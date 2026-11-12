@@ -2,22 +2,31 @@ using VirtualContactSheet.Cli;
 
 namespace VirtualContactSheet.Test;
 
-public class InputResolverTests
+/// <summary>
+/// Resolves real files: inputs are classified by what exists on disk, so every path a test
+/// resolves is created first in a throwaway folder.
+/// </summary>
+public sealed class InputResolverTests : IDisposable
 {
+    private readonly TempImageFolder _files = new();
+
+    public void Dispose() => _files.Dispose();
+
     [Fact]
     public void VideoFile_ResolvesToOneVideoSheet()
     {
-        var inputs = Resolve(["movie.mkv"]);
+        var movie = Video("movie.mkv");
 
-        var input = Assert.IsType<VideoInput>(Assert.Single(inputs));
-        Assert.Equal("movie.mkv", input.Path);
-        Assert.Equal("movie", input.OutputBase);
+        var input = Assert.IsType<VideoInput>(Assert.Single(Resolve([movie])));
+
+        Assert.Equal(movie, input.Path);
+        Assert.Equal(Named("movie"), input.OutputBase);
     }
 
     [Fact]
     public void SeveralVideos_StayOneSheetEach()
     {
-        var inputs = Resolve(["a.mkv", "b.mp4"]);
+        var inputs = Resolve([Video("a.mkv"), Video("b.mp4")]);
 
         Assert.Equal(2, inputs.Count);
         Assert.All(inputs, input => Assert.IsType<VideoInput>(input));
@@ -28,7 +37,7 @@ public class InputResolverTests
     {
         // Anything the image side does not claim must keep resolving to video, so unusual
         // containers work exactly as they did before image support existed.
-        var input = Assert.Single(Resolve(["recording.mts"]));
+        var input = Assert.Single(Resolve([Video("recording.mts")]));
 
         Assert.IsType<VideoInput>(input);
     }
@@ -36,9 +45,9 @@ public class InputResolverTests
     [Fact]
     public void ExtensionlessFile_FallsBackToVideo()
     {
-        var input = Assert.IsType<VideoInput>(Assert.Single(Resolve(["dump"])));
+        var input = Assert.IsType<VideoInput>(Assert.Single(Resolve([Video("dump")])));
 
-        Assert.Equal("dump", input.OutputBase);
+        Assert.Equal(Named("dump"), input.OutputBase);
     }
 
     [Fact]
@@ -67,33 +76,38 @@ public class InputResolverTests
     [Fact]
     public void LooseImageFiles_CoalesceIntoASingleSheet()
     {
-        var inputs = Resolve(["a.jpg", "b.png", "c.webp"]);
+        string[] images = [Image("a.jpg"), Image("b.png"), Image("c.webp")];
 
-        var input = Assert.IsType<LooseImagesInput>(Assert.Single(inputs));
-        Assert.Equal(["a.jpg", "b.png", "c.webp"], input.Paths);
+        var input = Assert.IsType<LooseImagesInput>(Assert.Single(Resolve(images)));
+
+        Assert.Equal(images, input.Paths);
         Assert.Equal("contact-sheet", input.OutputBase);
     }
 
     [Fact]
     public void SingleLooseImage_IsNamedAfterItself()
     {
-        var input = Assert.IsType<LooseImagesInput>(Assert.Single(Resolve(["holiday/beach.jpg"])));
+        var beach = Image(Path.Combine("holiday", "beach.jpg"));
 
-        Assert.Equal("holiday/beach", input.OutputBase);
+        var input = Assert.IsType<LooseImagesInput>(Assert.Single(Resolve([beach])));
+
+        Assert.Equal(Named(Path.Combine("holiday", "beach")), input.OutputBase);
     }
 
     [Fact]
     public void MixedInputs_KeepVideosSeparateAndGroupImagesAtTheFirstOne()
     {
-        var inputs = Resolve(["a.mkv", "one.jpg", "b.mkv", "two.jpg"]);
+        string[] arguments = [Video("a.mkv"), Image("one.jpg"), Video("b.mkv"), Image("two.jpg")];
+
+        var inputs = Resolve(arguments);
 
         Assert.Equal(3, inputs.Count);
         Assert.IsType<VideoInput>(inputs[0]);
 
         // The group takes the slot of the first loose image, ahead of the second video.
-        Assert.Equal(["one.jpg", "two.jpg"], Assert.IsType<LooseImagesInput>(inputs[1]).Paths);
+        Assert.Equal([arguments[1], arguments[3]], Assert.IsType<LooseImagesInput>(inputs[1]).Paths);
 
-        Assert.Equal("b", Assert.IsType<VideoInput>(inputs[2]).OutputBase);
+        Assert.Equal(Named("b"), Assert.IsType<VideoInput>(inputs[2]).OutputBase);
     }
 
     [Fact]
@@ -101,12 +115,13 @@ public class InputResolverTests
     {
         using var folder = new TempImageFolder();
         folder.Add("a.png");
+        var loose = Image("loose.jpg");
 
-        var inputs = Resolve([folder.Root, "loose.jpg"]);
+        var inputs = Resolve([folder.Root, loose]);
 
         Assert.Equal(2, inputs.Count);
         Assert.Equal(folder.Root, Assert.IsType<ImageFolderInput>(inputs[0]).Folder);
-        Assert.Equal(["loose.jpg"], Assert.IsType<LooseImagesInput>(inputs[1]).Paths);
+        Assert.Equal([loose], Assert.IsType<LooseImagesInput>(inputs[1]).Paths);
     }
 
     [Fact]
@@ -148,11 +163,64 @@ public class InputResolverTests
         var first = Path.Combine(folder.Root, "*.png");
         var second = Path.Combine(folder.Root, "*.jpg");
 
-        var error = Assert.Left(InputResolver.Resolve(["movie.mkv", first, second]));
+        var error = Assert.Left(InputResolver.Resolve([Video("movie.mkv"), first, second]));
 
         Assert.Equal($"No files matched '{first}'.", error);
     }
 
+    [Fact]
+    public void MissingFolder_IsAnError()
+    {
+        var missing = Named("holiday") + Path.DirectorySeparatorChar;
+
+        var error = Assert.Left(InputResolver.Resolve([missing]));
+
+        Assert.Equal($"Folder not found: '{missing}'.", error);
+    }
+
+    [Theory]
+    [InlineData("nope.mp4")]
+    [InlineData("gone.jpg")]
+    [InlineData("holiday")]
+    public void MissingFileOrFolder_IsAnError(string name)
+    {
+        // Without a trailing separator a missing path could have been either.
+        var missing = Named(name);
+
+        var error = Assert.Left(InputResolver.Resolve([missing]));
+
+        Assert.Equal($"File or folder not found: '{missing}'.", error);
+    }
+
+    [Fact]
+    public void MissingPath_RejectsTheWholeRun()
+    {
+        // Reported before any sheet is rendered, so a typo cannot waste a long run.
+        var missing = Named("typo.mkv");
+
+        var error = Assert.Left(InputResolver.Resolve([Video("a.mkv"), missing, Image("b.png")]));
+
+        Assert.Equal($"File or folder not found: '{missing}'.", error);
+    }
+
+    [Fact]
+    public void SeveralMissingPaths_ReportTheFirstOne()
+    {
+        var first = Named("first.mkv");
+
+        var error = Assert.Left(InputResolver.Resolve([first, Named("second.mkv")]));
+
+        Assert.Equal($"File or folder not found: '{first}'.", error);
+    }
+
     private static IReadOnlyList<SheetInput> Resolve(string[] arguments)
         => Assert.Right(InputResolver.Resolve(arguments));
+
+    /// <summary>A file the resolver must treat as a video; its content is never read.</summary>
+    private string Video(string name) => _files.AddNonImage(name);
+
+    private string Image(string name) => _files.Add(name);
+
+    /// <summary>The expected output base: a path in the test folder, without extension.</summary>
+    private string Named(string name) => Path.Combine(_files.Root, name);
 }

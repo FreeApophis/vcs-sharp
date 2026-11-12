@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A video whose dimensions ffprobe cannot determine no longer shows `Dimensions: 0x0` in the
   header; the line is left out.
+- A path that does not exist is no longer treated as a video that then fails with "Not a valid
+  video or no video stream". It is now rejected with `Folder not found: '…'` (for a path ending
+  in `/` or `\`) or `File or folder not found: '…'`, before any sheet is rendered — so a typo
+  stops the run up front, even with `--continue`.
 
 ## [2.0.0] - 2026-09-24
 
