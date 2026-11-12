@@ -66,13 +66,15 @@ internal static class ImageOptionsFactory
     }
 
     /// <summary>Builds the collection for one resolved image input.</summary>
-    public static ImageCollection Create(SheetInput input, ImageOptions options)
+    public static ImageCollection Create(ImageInput input, ImageOptions options)
     {
         var loader = new SkiaImageLoader(options.Fit);
 
-        var collection = input.Folder is { } folder
-            ? ImageCollection.FromFolder(folder, options.Recursive, loader)
-            : new ImageCollection(input.Paths, loader);
+        var collection = input switch
+        {
+            ImageFolderInput folder => ImageCollection.FromFolder(folder.Folder, options.Recursive, loader),
+            LooseImagesInput loose => new ImageCollection(loose.Paths, loader),
+        };
 
         collection.Selection = options.Selection;
         return collection;

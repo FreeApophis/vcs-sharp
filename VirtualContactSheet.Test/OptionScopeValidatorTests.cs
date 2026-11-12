@@ -4,22 +4,11 @@ namespace VirtualContactSheet.Test;
 
 public class OptionScopeValidatorTests
 {
-    private static readonly SheetInput VideoInput = new()
-    {
-        Kind = SheetInputKind.Video,
-        Paths = ["movie.mkv"],
-        DisplayName = "movie.mkv",
-        OutputBase = "movie",
-    };
+    private static readonly SheetInput VideoInput =
+        new VideoInput(Path: "movie.mkv", DisplayName: "movie.mkv", OutputBase: "movie");
 
-    private static readonly SheetInput ImageInput = new()
-    {
-        Kind = SheetInputKind.Images,
-        Paths = ["photos"],
-        Folder = "photos",
-        DisplayName = "photos",
-        OutputBase = "photos",
-    };
+    private static readonly SheetInput ImageInput =
+        new ImageFolderInput(Folder: "photos", DisplayName: "photos", OutputBase: "photos");
 
     [Theory]
     [InlineData("--interval")]

@@ -87,7 +87,7 @@ public class CliImageOptionsTests
         folder.Add("a.png");
         folder.Add(Path.Combine("nested", "b.png"));
 
-        var input = Assert.Single(ResolveOne(folder.Root));
+        var input = ResolveImages(folder.Root);
 
         var flat = ImageOptionsFactory.Create(input, new ImageOptions());
         var deep = ImageOptionsFactory.Create(input, new ImageOptions { Recursive = true });
@@ -103,7 +103,7 @@ public class CliImageOptionsTests
         var second = folder.Add("z.png");
         var first = folder.Add("a.png");
 
-        var input = Assert.Single(ResolveOne(second, first));
+        var input = ResolveImages(second, first);
         var collection = ImageOptionsFactory.Create(input, new ImageOptions());
 
         Assert.Equal([second, first], collection.Paths);
@@ -116,17 +116,17 @@ public class CliImageOptionsTests
         using var folder = new TempImageFolder();
         folder.Add("a.png");
 
-        var input = Assert.Single(ResolveOne(folder.Root));
+        var input = ResolveImages(folder.Root);
 
         var collection = ImageOptionsFactory.Create(input, new ImageOptions { Selection = ImageSelection.All });
 
         Assert.Equal(ImageSelection.All, collection.Selection);
     }
 
-    private static IReadOnlyList<SheetInput> ResolveOne(params string[] arguments)
+    private static ImageInput ResolveImages(params string[] arguments)
     {
         Assert.True(InputResolver.TryResolve(arguments, out var inputs, out var error), error);
-        return inputs;
+        return Assert.IsAssignableFrom<ImageInput>(Assert.Single(inputs));
     }
 
     private static CliSettings Settings() => new()

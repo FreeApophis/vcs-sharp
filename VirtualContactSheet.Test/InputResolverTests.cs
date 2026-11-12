@@ -9,9 +9,8 @@ public class InputResolverTests
     {
         var inputs = Resolve(["movie.mkv"]);
 
-        var input = Assert.Single(inputs);
-        Assert.Equal(SheetInputKind.Video, input.Kind);
-        Assert.Equal(["movie.mkv"], input.Paths);
+        var input = Assert.IsType<VideoInput>(Assert.Single(inputs));
+        Assert.Equal("movie.mkv", input.Path);
         Assert.Equal("movie", input.OutputBase);
     }
 
@@ -21,7 +20,7 @@ public class InputResolverTests
         var inputs = Resolve(["a.mkv", "b.mp4"]);
 
         Assert.Equal(2, inputs.Count);
-        Assert.All(inputs, input => Assert.Equal(SheetInputKind.Video, input.Kind));
+        Assert.All(inputs, input => Assert.IsType<VideoInput>(input));
     }
 
     [Fact]
@@ -31,15 +30,14 @@ public class InputResolverTests
         // containers work exactly as they did before image support existed.
         var input = Assert.Single(Resolve(["recording.mts"]));
 
-        Assert.Equal(SheetInputKind.Video, input.Kind);
+        Assert.IsType<VideoInput>(input);
     }
 
     [Fact]
     public void ExtensionlessFile_FallsBackToVideo()
     {
-        var input = Assert.Single(Resolve(["dump"]));
+        var input = Assert.IsType<VideoInput>(Assert.Single(Resolve(["dump"])));
 
-        Assert.Equal(SheetInputKind.Video, input.Kind);
         Assert.Equal("dump", input.OutputBase);
     }
 
@@ -49,9 +47,8 @@ public class InputResolverTests
         using var folder = new TempImageFolder();
         folder.Add("a.png");
 
-        var input = Assert.Single(Resolve([folder.Root]));
+        var input = Assert.IsType<ImageFolderInput>(Assert.Single(Resolve([folder.Root])));
 
-        Assert.Equal(SheetInputKind.Images, input.Kind);
         Assert.Equal(folder.Root, input.Folder);
         Assert.Equal(folder.Root, input.OutputBase);
     }
@@ -72,19 +69,16 @@ public class InputResolverTests
     {
         var inputs = Resolve(["a.jpg", "b.png", "c.webp"]);
 
-        var input = Assert.Single(inputs);
-        Assert.Equal(SheetInputKind.Images, input.Kind);
+        var input = Assert.IsType<LooseImagesInput>(Assert.Single(inputs));
         Assert.Equal(["a.jpg", "b.png", "c.webp"], input.Paths);
-        Assert.Null(input.Folder);
         Assert.Equal("contact-sheet", input.OutputBase);
     }
 
     [Fact]
     public void SingleLooseImage_IsNamedAfterItself()
     {
-        var input = Assert.Single(Resolve(["holiday/beach.jpg"]));
+        var input = Assert.IsType<LooseImagesInput>(Assert.Single(Resolve(["holiday/beach.jpg"])));
 
-        Assert.Equal(SheetInputKind.Images, input.Kind);
         Assert.Equal("holiday/beach", input.OutputBase);
     }
 
@@ -94,14 +88,12 @@ public class InputResolverTests
         var inputs = Resolve(["a.mkv", "one.jpg", "b.mkv", "two.jpg"]);
 
         Assert.Equal(3, inputs.Count);
-        Assert.Equal(SheetInputKind.Video, inputs[0].Kind);
+        Assert.IsType<VideoInput>(inputs[0]);
 
         // The group takes the slot of the first loose image, ahead of the second video.
-        Assert.Equal(SheetInputKind.Images, inputs[1].Kind);
-        Assert.Equal(["one.jpg", "two.jpg"], inputs[1].Paths);
+        Assert.Equal(["one.jpg", "two.jpg"], Assert.IsType<LooseImagesInput>(inputs[1]).Paths);
 
-        Assert.Equal(SheetInputKind.Video, inputs[2].Kind);
-        Assert.Equal("b", inputs[2].OutputBase);
+        Assert.Equal("b", Assert.IsType<VideoInput>(inputs[2]).OutputBase);
     }
 
     [Fact]
@@ -113,8 +105,8 @@ public class InputResolverTests
         var inputs = Resolve([folder.Root, "loose.jpg"]);
 
         Assert.Equal(2, inputs.Count);
-        Assert.Equal(folder.Root, inputs[0].Folder);
-        Assert.Null(inputs[1].Folder);
+        Assert.Equal(folder.Root, Assert.IsType<ImageFolderInput>(inputs[0]).Folder);
+        Assert.Equal(["loose.jpg"], Assert.IsType<LooseImagesInput>(inputs[1]).Paths);
     }
 
     [Fact]
@@ -125,9 +117,8 @@ public class InputResolverTests
         folder.Add("a.png");
         folder.AddNonImage("notes.txt");
 
-        var input = Assert.Single(Resolve([Path.Combine(folder.Root, "*.png")]));
+        var input = Assert.IsType<LooseImagesInput>(Assert.Single(Resolve([Path.Combine(folder.Root, "*.png")])));
 
-        Assert.Equal(SheetInputKind.Images, input.Kind);
         Assert.Equal(["a.png", "b.png"], input.Paths.Select(Path.GetFileName));
     }
 
