@@ -20,7 +20,7 @@ public static class MissingFrame
 
         float cx = width / 2f;
         float cy = height / 2f;
-        float radius = Math.Min(width, height) * 0.3f;
+        float radius = Math.Min(width, height) * 0.1f;
         float stroke = radius * 0.16f;
 
         using var ring = new SKPaint { Color = IconColor, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = stroke };

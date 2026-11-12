@@ -13,9 +13,10 @@ public class MissingFrameTests
     [Fact]
     public void Render_IsGrayWithAWarningIconInTheMiddle()
     {
-        using var placeholder = MissingFrame.Render(160, 90);
+        // Large enough that the exclamation bar covers whole pixels instead of anti-aliased ones.
+        using var placeholder = MissingFrame.Render(800, 450);
 
         Assert.Equal(MissingFrame.Background, placeholder.GetPixel(2, 2));
-        Assert.Equal(MissingFrame.IconColor, placeholder.GetPixel(80, 45));
+        Assert.Equal(MissingFrame.IconColor, placeholder.GetPixel(400, 225));
     }
 }
