@@ -7,27 +7,45 @@ namespace VirtualContactSheet.Cli;
 ///
 /// A directory and a video each make their own sheet, but N image files make <em>one</em> sheet,
 /// so loose image files are coalesced into a single group that takes the position of the first
-/// one. Detection order is directory, then a known image extension, then video — so anything that
-/// worked before the image support landed still resolves to video, including unusual containers.
+/// one. Detection order is directory, then a file with a known image extension, then video — so
+/// anything that worked before the image support landed still resolves to video, including
+/// unusual containers. A path that exists as neither is rejected up front, before any work starts.
 /// </summary>
 internal static class InputResolver
 {
     private const string LooseGroupOutputName = "contact-sheet";
 
-    /// <summary>The sheets to produce, or the error for the first argument that cannot be expanded.</summary>
+    /// <summary>
+    /// The sheets to produce, or the error for the first argument that cannot be expanded or does
+    /// not exist.
+    /// </summary>
     public static Either<string, IReadOnlyList<SheetInput>> Resolve(IReadOnlyList<string> arguments)
         => arguments
             .Traverse(Expand)
-            .Select(expanded => Coalesce([.. expanded.SelectMany(paths => paths).Select(Classify)]));
+            .SelectMany(expanded => expanded.SelectMany(paths => paths).Traverse(Classify))
+            .Select(classified => Coalesce([.. classified]));
 
-    /// <summary>Directory, then a known image extension, then video; a loose image starts as a group of one.</summary>
-    private static SheetInput Classify(string path)
+    /// <summary>
+    /// Directory, then a file with a known image extension, then any other file as video; a loose
+    /// image starts as a group of one.
+    /// </summary>
+    private static Either<string, SheetInput> Classify(string path)
         => path switch
         {
-            _ when Directory.Exists(path) => ForFolder(path),
-            _ when ImageCollection.IsSupported(path) => ForLooseImages([path]),
-            _ => ForVideo(path),
+            _ when Directory.Exists(path) => Found(ForFolder(path)),
+            _ when !File.Exists(path) => NotFound(path),
+            _ when ImageCollection.IsSupported(path) => Found(ForLooseImages([path])),
+            _ => Found(ForVideo(path)),
         };
+
+    private static Either<string, SheetInput> Found(SheetInput input)
+        => Either<string, SheetInput>.Right(input);
+
+    /// <summary>A trailing separator can only mean a folder; otherwise the path could have been either.</summary>
+    private static Either<string, SheetInput> NotFound(string path)
+        => Either<string, SheetInput>.Left(Path.EndsInDirectorySeparator(path)
+            ? $"Folder not found: '{path}'."
+            : $"File or folder not found: '{path}'.");
 
     /// <summary>Merges every loose image into one group, placed where the first of them appeared.</summary>
     private static IReadOnlyList<SheetInput> Coalesce(List<SheetInput> classified)

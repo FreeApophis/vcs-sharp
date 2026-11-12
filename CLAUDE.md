@@ -229,8 +229,10 @@ The single root command serves both media — there are no subcommands. `InputRe
 positional arguments into a list of `SheetInput`s (one per output sheet), which is where the
 asymmetry lives: a video and a directory each make their own sheet, but N loose image files make
 one, so they are coalesced into a group at the position of the first. Detection order is
-`Directory.Exists`, then `ImageCollection.IsSupported`, then video — so an unrecognised extension
-still resolves to video, as it did before image support. `OptionScopeValidator` then rejects
+`Directory.Exists`, then (for an existing file) `ImageCollection.IsSupported`, then video — so an
+unrecognised extension still resolves to video, as it did before image support. A path that
+exists as neither file nor folder is an error up front (`Folder not found` / `File or folder not
+found`), so resolver tests must create the files they resolve. `OptionScopeValidator` then rejects
 options that cannot apply to any resolved input, and `SheetRunner` switches on the input type.
 
 `SheetInput` is a C# 15 **closed hierarchy** (`SheetInput.cs`): `VideoInput`, and the closed
