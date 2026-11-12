@@ -83,3 +83,25 @@ internal sealed class FakeProbe : IVideoInfoProvider
 
     public Task<VideoInfo> ProbeAsync(string path, CancellationToken ct = default) => Task.FromResult(_info);
 }
+
+/// <summary>
+/// A <see cref="FakeCapturer"/> that throws <see cref="CaptureException"/> at the given seconds, like
+/// ffmpeg on a corrupt stretch of video, and returns black frames at <c>blankAt</c>.
+/// </summary>
+internal sealed class FailingCapturer(IReadOnlyCollection<int> failAt, IReadOnlyCollection<int>? blankAt = null) : IFrameCapturer
+{
+    private readonly FakeCapturer _inner = new();
+
+    public Task<SKBitmap> CaptureAsync(string videoPath, TimeIndex time, int width, int height = 0, CancellationToken ct = default)
+    {
+        int seconds = (int)time.TotalSeconds;
+        if (failAt.Contains(seconds))
+        {
+            throw new CaptureException($"ffmpeg returned no data for frame at {time}.");
+        }
+
+        return blankAt?.Contains(seconds) == true
+            ? Task.FromResult(TestFrames.Solid(width, height > 0 ? height : (width * 9) / 16, SKColors.Black))
+            : _inner.CaptureAsync(videoPath, time, width, height, ct);
+    }
+}

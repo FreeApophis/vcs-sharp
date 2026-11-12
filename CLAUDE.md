@@ -104,6 +104,8 @@ Shared:
 - `ContactSheetOptions.cs` — all grid/style settings (`Columns`, `Rows`, `Interval`, `Polaroid`, `SoftShadow`, …)
 - `TimeIndex.cs` — flexible time parser ("3m30", "1:22", "90", "1h2m3s")
 - `CaptureException.cs` — thrown when a frame capture or an image load fails
+- `MissingFrame.cs` — gray placeholder with a circled warning icon, drawn in the cell of a video
+  frame that could not be captured (so a partly corrupt video still yields a sheet)
 
 `VideoProcessing/`:
 - `Video.cs` — top-level orchestrator: probe → compute times → capture → compose
