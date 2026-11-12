@@ -127,25 +127,32 @@ public class InputResolverTests
     {
         using var folder = new TempImageFolder();
 
-        var ok = InputResolver.TryResolve([Path.Combine(folder.Root, "*.png")], out _, out var error);
+        var error = Assert.Left(InputResolver.Resolve([Path.Combine(folder.Root, "*.png")]));
 
-        Assert.False(ok);
         Assert.Contains("No files matched", error);
     }
 
     [Fact]
     public void Wildcard_InAMissingFolder_IsAnError()
     {
-        var ok = InputResolver.TryResolve(
-            [Path.Combine(Path.GetTempPath(), "vcs-no-such-dir-7c1a", "*.png")], out _, out var error);
+        var error = Assert.Left(InputResolver.Resolve(
+            [Path.Combine(Path.GetTempPath(), "vcs-no-such-dir-7c1a", "*.png")]));
 
-        Assert.False(ok);
         Assert.Contains("No files matched", error);
     }
 
-    private static IReadOnlyList<SheetInput> Resolve(string[] arguments)
+    [Fact]
+    public void SeveralFailingArguments_ReportTheFirstOne()
     {
-        Assert.True(InputResolver.TryResolve(arguments, out var inputs, out var error), error);
-        return inputs;
+        using var folder = new TempImageFolder();
+        var first = Path.Combine(folder.Root, "*.png");
+        var second = Path.Combine(folder.Root, "*.jpg");
+
+        var error = Assert.Left(InputResolver.Resolve(["movie.mkv", first, second]));
+
+        Assert.Equal($"No files matched '{first}'.", error);
     }
+
+    private static IReadOnlyList<SheetInput> Resolve(string[] arguments)
+        => Assert.Right(InputResolver.Resolve(arguments));
 }

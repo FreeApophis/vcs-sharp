@@ -18,12 +18,23 @@ internal static class SheetRunner
             return 1;
         }
 
-        if (!InputResolver.TryResolve(settings.Files, out var inputs, out var inputError))
-        {
-            Console.Error.WriteLine(inputError);
-            return 1;
-        }
+        return await InputResolver.Resolve(settings.Files).Match(
+            left: error => Task.FromResult(Fail(error)),
+            right: inputs => RunInputsAsync(settings, config, inputs, ct));
+    }
 
+    private static int Fail(string error)
+    {
+        Console.Error.WriteLine(error);
+        return 1;
+    }
+
+    private static async Task<int> RunInputsAsync(
+        CliSettings settings,
+        VcsConfig config,
+        IReadOnlyList<SheetInput> inputs,
+        CancellationToken ct)
+    {
         if (!OptionScopeValidator.Validate(settings, inputs, out var scopeError))
         {
             Console.Error.WriteLine(scopeError);
