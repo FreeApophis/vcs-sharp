@@ -7,26 +7,15 @@ namespace VirtualContactSheet.Cli;
 /// </summary>
 internal static class OptionScopeValidator
 {
-    public static bool Validate(CliSettings settings, IReadOnlyList<SheetInput> inputs, out string? error)
-    {
-        bool hasVideo = inputs.Any(input => input is VideoInput);
-        bool hasImages = inputs.Any(input => input is ImageInput);
+    /// <summary>The inputs unchanged, or the error for the first option that applies to none of them.</summary>
+    public static Either<string, IReadOnlyList<SheetInput>> Validate(CliSettings settings, IReadOnlyList<SheetInput> inputs)
+        => FirstMisapplied(settings, inputs).Match(
+            none: () => Either<string, IReadOnlyList<SheetInput>>.Right(inputs),
+            some: Either<string, IReadOnlyList<SheetInput>>.Left);
 
-        if (!hasVideo && Misapplied(VideoOnly(settings)) is { } videoOption)
-        {
-            error = $"{videoOption} applies to video inputs only.";
-            return false;
-        }
-
-        if (!hasImages && Misapplied(ImageOnly(settings)) is { } imageOption)
-        {
-            error = $"{imageOption} applies to image inputs only.";
-            return false;
-        }
-
-        error = null;
-        return true;
-    }
+    private static Option<string> FirstMisapplied(CliSettings settings, IReadOnlyList<SheetInput> inputs)
+        => Misapplied(VideoOnly(settings), "video", applies: inputs.Any(input => input is VideoInput))
+            .OrElse(() => Misapplied(ImageOnly(settings), "image", applies: inputs.Any(input => input is ImageInput)));
 
     private static IEnumerable<(string Name, bool Used)> VideoOnly(CliSettings settings) =>
     [
@@ -43,6 +32,8 @@ internal static class OptionScopeValidator
         ("--all", settings.AllImages),
     ];
 
-    private static string? Misapplied(IEnumerable<(string Name, bool Used)> options)
-        => options.FirstOrDefault(option => option.Used).Name;
+    private static Option<string> Misapplied(IEnumerable<(string Name, bool Used)> options, string medium, bool applies)
+        => applies
+            ? Option<string>.None
+            : options.FirstOrNone(option => option.Used).Select(option => $"{option.Name} applies to {medium} inputs only.");
 }

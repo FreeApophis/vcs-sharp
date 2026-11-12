@@ -17,9 +17,8 @@ public class OptionScopeValidatorTests
     [InlineData("--highlight")]
     public void VideoOnlyOption_WithOnlyImageInputs_IsRejected(string option)
     {
-        var ok = OptionScopeValidator.Validate(WithVideoOption(option), [ImageInput], out var error);
+        var error = Assert.Left(OptionScopeValidator.Validate(WithVideoOption(option), [ImageInput]));
 
-        Assert.False(ok);
         Assert.Equal($"{option} applies to video inputs only.", error);
     }
 
@@ -29,9 +28,8 @@ public class OptionScopeValidatorTests
     [InlineData("--all")]
     public void ImageOnlyOption_WithOnlyVideoInputs_IsRejected(string option)
     {
-        var ok = OptionScopeValidator.Validate(WithImageOption(option), [VideoInput], out var error);
+        var error = Assert.Left(OptionScopeValidator.Validate(WithImageOption(option), [VideoInput]));
 
-        Assert.False(ok);
         Assert.Equal($"{option} applies to image inputs only.", error);
     }
 
@@ -39,18 +37,17 @@ public class OptionScopeValidatorTests
     public void VideoOnlyOption_WithMixedInputs_IsAccepted()
     {
         // The option is meaningful for the video half of the run, so it is not an error.
-        var ok = OptionScopeValidator.Validate(WithVideoOption("--interval"), [VideoInput, ImageInput], out var error);
+        var inputs = Assert.Right(OptionScopeValidator.Validate(WithVideoOption("--interval"), [VideoInput, ImageInput]));
 
-        Assert.True(ok);
-        Assert.Null(error);
+        Assert.Equal([VideoInput, ImageInput], inputs);
     }
 
     [Fact]
     public void ImageOnlyOption_WithMixedInputs_IsAccepted()
     {
-        var ok = OptionScopeValidator.Validate(WithImageOption("--fit"), [VideoInput, ImageInput], out _);
+        var inputs = Assert.Right(OptionScopeValidator.Validate(WithImageOption("--fit"), [VideoInput, ImageInput]));
 
-        Assert.True(ok);
+        Assert.Equal([VideoInput, ImageInput], inputs);
     }
 
     [Fact]
@@ -58,8 +55,8 @@ public class OptionScopeValidatorTests
     {
         var settings = Settings() with { Columns = 3, Title = "Holiday", NoShadow = true };
 
-        Assert.True(OptionScopeValidator.Validate(settings, [ImageInput], out _));
-        Assert.True(OptionScopeValidator.Validate(settings, [VideoInput], out _));
+        Assert.Right(OptionScopeValidator.Validate(settings, [ImageInput]));
+        Assert.Right(OptionScopeValidator.Validate(settings, [VideoInput]));
     }
 
     private static CliSettings WithVideoOption(string option) => option switch

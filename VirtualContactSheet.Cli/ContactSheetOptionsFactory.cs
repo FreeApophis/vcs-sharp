@@ -9,7 +9,21 @@ namespace VirtualContactSheet.Cli;
 /// </summary>
 internal static class ContactSheetOptionsFactory
 {
-    public static bool TryCreate(CliSettings settings, VcsConfig config, out ContactSheetOptions options, out string? error)
+    /// <summary>The sheet options, or the error for the first invalid <c>--highlight</c> or <c>--aspect</c>.</summary>
+    public static Either<string, ContactSheetOptions> Create(CliSettings settings, VcsConfig config)
+        => from highlights in ParseHighlights(settings.HighlightStrings)
+           from aspectRatio in ParseAspectRatioSetting(settings.AspectRatio)
+           select Build(settings, config, highlights, aspectRatio);
+
+    /// <summary>Convenience overload used by tests; equivalent to an empty config.</summary>
+    public static Either<string, ContactSheetOptions> Create(CliSettings settings)
+        => Create(settings, new VcsConfig());
+
+    private static ContactSheetOptions Build(
+        CliSettings settings,
+        VcsConfig config,
+        IReadOnlyList<TimeIndex> highlights,
+        Option<float> aspectRatio)
     {
         var result = new ContactSheetOptions();
 
@@ -36,11 +50,7 @@ internal static class ContactSheetOptionsFactory
             result.Format = Formats.Parse(format);
         }
 
-        if (!TryParseHighlights(settings.HighlightStrings, result, out error))
-        {
-            options = result;
-            return false;
-        }
+        result.Highlights.AddRange(highlights);
 
         if (settings.Interval.HasValue)
         {
@@ -81,26 +91,10 @@ internal static class ContactSheetOptionsFactory
             result.ThumbnailHeight = settings.Height;
         }
 
-        if (settings.AspectRatio is not null)
-        {
-            if (!TryParseAspectRatio(settings.AspectRatio, out var ar))
-            {
-                error = $"Invalid aspect ratio '{settings.AspectRatio}'. Expected a number (1.778) or fraction (16/9).";
-                options = result;
-                return false;
-            }
+        result.AspectRatio = aspectRatio.GetOrElse(result.AspectRatio);
 
-            result.AspectRatio = ar;
-        }
-
-        options = result;
-        error = null;
-        return true;
+        return result;
     }
-
-    /// <summary>Convenience overload used by tests; equivalent to an empty config.</summary>
-    public static bool TryCreate(CliSettings settings, out ContactSheetOptions options, out string? error)
-        => TryCreate(settings, new VcsConfig(), out options, out error);
 
     private static void ApplyConfig(ContactSheetOptions result, VcsConfig config)
     {
@@ -131,10 +125,8 @@ internal static class ContactSheetOptionsFactory
                 result.ThumbnailWidth = w;
             }
 
-            if (main.Interval is { } interval && TimeIndex.TryParse(interval, out var ti))
-            {
-                result.Interval = ti;
-            }
+            // An unparseable config interval is ignored, like an invalid config color.
+            result.Interval = Option.FromNullable(main.Interval).SelectMany(ParseTimeIndex).Match(none: result.Interval, some: interval => interval);
         }
 
         if (config.Filter is { } filter)
@@ -172,15 +164,8 @@ internal static class ContactSheetOptionsFactory
             ApplyTextStyle(style.Timestamp, result.TimestampStyle);
             ApplyTextStyle(style.Signature, result.SignatureStyle);
 
-            if (style.Contact?.Background is { } contactBg && ColorParser.TryParse(contactBg, out var sheetColor))
-            {
-                result.SheetBackground = sheetColor;
-            }
-
-            if (style.Highlight?.Background is { } hlBg && ColorParser.TryParse(hlBg, out var hlColor))
-            {
-                result.HighlightBackground = hlColor;
-            }
+            result.SheetBackground = ColorParser.Parse(style.Contact?.Background).GetOrElse(result.SheetBackground);
+            result.HighlightBackground = ColorParser.Parse(style.Highlight?.Background).GetOrElse(result.HighlightBackground);
         }
     }
 
@@ -211,15 +196,8 @@ internal static class ContactSheetOptionsFactory
             target.FontFile = file;
         }
 
-        if (config.Color is { } color && ColorParser.TryParse(color, out var c))
-        {
-            target.Color = c;
-        }
-
-        if (config.Background is { } bg && ColorParser.TryParse(bg, out var bc))
-        {
-            target.Background = bc;
-        }
+        target.Color = ColorParser.Parse(config.Color).GetOrElse(target.Color);
+        target.Background = ColorParser.Parse(config.Background).GetOrElse(target.Background);
     }
 
     /// <summary>
@@ -238,40 +216,32 @@ internal static class ContactSheetOptionsFactory
         }
     }
 
-    private static bool TryParseAspectRatio(string input, out float ratio)
-    {
-        int slash = input.IndexOf('/');
-        if (slash >= 0)
+    private static Either<string, IReadOnlyList<TimeIndex>> ParseHighlights(IReadOnlyList<string> values)
+        => values.Traverse(value => ParseTimeIndex(value).ToEither($"Invalid highlight time: '{value}'"));
+
+    /// <summary>None when <c>--aspect</c> was not given; an error when it was given but is invalid.</summary>
+    private static Either<string, Option<float>> ParseAspectRatioSetting(string? value)
+        => Option.FromNullable(value).Traverse(text => ParseAspectRatio(text)
+            .ToEither($"Invalid aspect ratio '{text}'. Expected a number (1.778) or fraction (16/9)."));
+
+    /// <summary>A positive number (<c>1.778</c>) or fraction (<c>16/9</c>).</summary>
+    private static Option<float> ParseAspectRatio(string text)
+        => ParseNumberOrFraction(text).Where(ratio => ratio > 0);
+
+    private static Option<float> ParseNumberOrFraction(string text)
+        => text.Split('/') switch
         {
-            if (float.TryParse(input[..slash], NumberStyles.Float, CultureInfo.InvariantCulture, out float num)
-                && float.TryParse(input[(slash + 1)..], NumberStyles.Float, CultureInfo.InvariantCulture, out float den)
-                && den != 0)
-            {
-                ratio = num / den;
-                return ratio > 0;
-            }
+            [var number] => ParseFloat(number),
+            [var numerator, var denominator] =>
+                from n in ParseFloat(numerator)
+                from d in ParseFloat(denominator).Where(d => d != 0)
+                select n / d,
+            _ => Option<float>.None,
+        };
 
-            ratio = 0;
-            return false;
-        }
+    private static Option<float> ParseFloat(string text)
+        => text.ParseSingleOrNone(NumberStyles.Float, CultureInfo.InvariantCulture);
 
-        return float.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out ratio) && ratio > 0;
-    }
-
-    private static bool TryParseHighlights(IReadOnlyList<string> highlightStrings, ContactSheetOptions options, out string? error)
-    {
-        foreach (var h in highlightStrings)
-        {
-            if (!TimeIndex.TryParse(h, out var ti))
-            {
-                error = $"Invalid highlight time: '{h}'";
-                return false;
-            }
-
-            options.Highlights.Add(ti);
-        }
-
-        error = null;
-        return true;
-    }
+    private static Option<TimeIndex> ParseTimeIndex(string text)
+        => TimeIndex.TryParse(text, out var time) ? time : Option<TimeIndex>.None;
 }
