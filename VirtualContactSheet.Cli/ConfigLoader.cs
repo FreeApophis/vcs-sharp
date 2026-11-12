@@ -82,6 +82,7 @@ internal static class ConfigLoader
             target.Filter.Timestamp = filter.Timestamp ?? target.Filter.Timestamp;
             target.Filter.Polaroid = filter.Polaroid ?? target.Filter.Polaroid;
             target.Filter.Shadow = filter.Shadow ?? target.Filter.Shadow;
+            target.Filter.Header = filter.Header ?? target.Filter.Header;
             target.Filter.BlankEvasion = filter.BlankEvasion ?? target.Filter.BlankEvasion;
             target.Filter.BlankThreshold = filter.BlankThreshold ?? target.Filter.BlankThreshold;
         }
