@@ -48,6 +48,7 @@ internal static class ImageOptionsFactory
     {
         var defaults = new ImageOptions();
         bool recursive = settings.Recursive || (image?.Recursive ?? defaults.Recursive);
+
         // Masonry has no fixed number of cells to sample for, so it takes every image unless the
         // config explicitly says otherwise.
         bool all = settings.AllImages || (image?.All ?? layout is MasonryLayout);

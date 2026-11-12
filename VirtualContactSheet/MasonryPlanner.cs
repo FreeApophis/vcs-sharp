@@ -14,6 +14,8 @@ public static class MasonryPlanner
     /// </summary>
     /// <param name="aspects">Width ÷ height of each picture, in order.</param>
     /// <param name="width">Width of the body, margins included.</param>
+    /// <param name="targetHeight">The picture height rows aim for.</param>
+    /// <param name="spacing">Margins, gaps and frames to leave room for.</param>
     public static BodyLayout Rows(IReadOnlyList<double> aspects, int width, int targetHeight, LayoutSpacing spacing)
     {
         int inner = width - (2 * spacing.Margin);
