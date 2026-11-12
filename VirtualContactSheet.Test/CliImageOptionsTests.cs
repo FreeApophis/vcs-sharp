@@ -78,6 +78,71 @@ public class CliImageOptionsTests
     }
 
     [Fact]
+    public void Layout_DefaultsToGrid()
+    {
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings(), new VcsConfig()));
+
+        Assert.IsType<GridLayout>(options.Layout);
+    }
+
+    [Fact]
+    public void Layout_Square_CropsToFill()
+    {
+        var options = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "Square" }, new VcsConfig()));
+
+        Assert.IsType<SquareLayout>(options.Layout);
+        Assert.Equal(ImageFit.Cover, options.Fit);
+    }
+
+    [Fact]
+    public void Layout_Invalid_ReportsTheAcceptedValues()
+    {
+        var error = Assert.Left(ImageOptionsFactory.Create(Settings() with { Layout = "hexagon" }, new VcsConfig()));
+
+        Assert.Contains("grid, square", error);
+    }
+
+    [Theory]
+    [InlineData("--fit")]
+    [InlineData("--aspect")]
+    public void Layout_SquareWithACellShapeOption_IsRejected(string option)
+    {
+        var settings = option == "--fit"
+            ? Settings() with { Layout = "square", Fit = "contain" }
+            : Settings() with { Layout = "square", AspectRatio = "16/9" };
+
+        var error = Assert.Left(ImageOptionsFactory.Create(settings, new VcsConfig()));
+
+        Assert.Contains(option, error);
+    }
+
+    [Fact]
+    public void Layout_FromConfig_IsOverriddenByTheCommandLine()
+    {
+        var config = new VcsConfig { Image = new ImageConfig { Layout = "square", Fit = "contain" } };
+
+        var fromConfig = Assert.Right(ImageOptionsFactory.Create(Settings(), config));
+        var fromCli = Assert.Right(ImageOptionsFactory.Create(Settings() with { Layout = "grid" }, config));
+
+        // The square layout wins over the config's fit: it only makes sense cropped.
+        Assert.IsType<SquareLayout>(fromConfig.Layout);
+        Assert.Equal(ImageFit.Cover, fromConfig.Fit);
+        Assert.IsType<GridLayout>(fromCli.Layout);
+        Assert.Equal(ImageFit.Contain, fromCli.Fit);
+    }
+
+    [Fact]
+    public void Create_AppliesTheLayout()
+    {
+        using var folder = new TempImageFolder();
+        folder.Add("a.png");
+
+        var collection = ImageOptionsFactory.CreateCollection(ResolveImages(folder.Root), new ImageOptions { Layout = new SquareLayout() });
+
+        Assert.IsType<SquareLayout>(collection.Layout);
+    }
+
+    [Fact]
     public void Create_FromFolder_HonoursRecursion()
     {
         using var folder = new TempImageFolder();

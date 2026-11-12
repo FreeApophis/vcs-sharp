@@ -11,6 +11,8 @@ internal sealed record ImageOptions
 {
     public ImageFit Fit { get; init; } = ImageFit.Contain;
 
+    public ImageLayout Layout { get; init; } = new GridLayout();
+
     public bool Recursive { get; init; }
 
     public ImageSelection Selection { get; init; } = ImageSelection.Sample;

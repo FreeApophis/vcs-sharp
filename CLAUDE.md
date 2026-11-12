@@ -124,6 +124,8 @@ Shared:
 - `ImageOrientation.cs` — EXIF origin → upright dimensions + canvas matrix
 - `ImageHeaderBuilder.cs` — two-column metadata header for a collection
 - `ImageSelection.cs` — `Sample` (evenly spread over the collection) vs `All`
+- `ImageLayout.cs` — closed hierarchy for how images are arranged: `GridLayout` (default),
+  `SquareLayout` (square cells; the default loader then crops with `ImageFit.Cover`)
 
 `ContactSheetOptions` is shared; its time-based members (`Interval`, `From`, `To`, `Highlights`,
 blank-frame evasion) apply to video only, and `Timestamp` toggles the caption overlay for both.

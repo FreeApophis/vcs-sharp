@@ -202,6 +202,45 @@ public class ImageCollectionTests
         Assert.Equal("160x90", collection.Caption(info.Images[0]));
     }
 
+    [Fact]
+    public async Task BuildContactSheet_SquareLayout_MakesSquareCellsWhateverTheImageShape()
+    {
+        var collection = new ImageCollection(["a.png"], new FakeImageLoader(), new FakeImageProbe(width: 1000, height: 500))
+        {
+            Layout = new SquareLayout(),
+        };
+
+        var options = TextFreeOptions();
+        options.Columns = 1;
+        options.Rows = 1;
+        options.AspectRatio = 16f / 9f; // a square is a square
+        var bytes = await collection.BuildContactSheetAsync(options, ct: TestContext.Current.CancellationToken);
+        using var decoded = SKBitmap.Decode(bytes);
+
+        // 160 x 160, plus the 2px margin on each side.
+        Assert.Equal(164, decoded.Width);
+        Assert.Equal(164, decoded.Height);
+    }
+
+    [Fact]
+    public async Task BuildContactSheet_SquareLayoutWithDefaultLoader_CropsInsteadOfLetterboxing()
+    {
+        using var folder = new TempImageFolder();
+        folder.Add("wide.png", width: 80, height: 40, color: SKColors.Red);
+        var collection = ImageCollection.FromFolder(folder.Root);
+        collection.Layout = new SquareLayout();
+
+        var options = TextFreeOptions();
+        options.Columns = 1;
+        options.Rows = 1;
+        options.ThumbnailWidth = 40;
+        var bytes = await collection.BuildContactSheetAsync(options, ct: TestContext.Current.CancellationToken);
+        using var decoded = SKBitmap.Decode(bytes);
+
+        // Letterboxing would leave the top of the cell in the white sheet background.
+        Assert.Equal(SKColors.Red, decoded.GetPixel(2 + 20, 2 + 1));
+    }
+
     private static ImageCollection Fake(IEnumerable<string> paths)
         => new(paths, new FakeImageLoader(), new FakeImageProbe());
 

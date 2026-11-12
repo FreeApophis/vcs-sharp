@@ -67,6 +67,9 @@ internal sealed record CliSettings
     /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
     public string? Fit { get; init; }
 
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public string? Layout { get; init; }
+
     /// <summary>Render every image rather than sampling the grid capacity.</summary>
     public bool AllImages { get; init; }
 

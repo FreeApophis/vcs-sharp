@@ -110,6 +110,8 @@ internal sealed class CliOptions
 
     private readonly CommandLine.Option<string?> _fit = CreateFitOption();
 
+    private readonly CommandLine.Option<string?> _layout = CreateLayoutOption();
+
     private readonly CommandLine.Option<bool> _allImages = new("--all")
     {
         Description = "Render every image instead of sampling --columns x --rows of them (image inputs only).",
@@ -144,7 +146,7 @@ internal sealed class CliOptions
             _timestamp, _noTimestamp,
             _polaroid, _noPolaroid,
             _shadow, _noShadow,
-            _recursive, _fit, _allImages,
+            _recursive, _fit, _allImages, _layout,
             _config, _ffmpegFolder, _quiet, _continue,
         };
 
@@ -180,6 +182,7 @@ internal sealed class CliOptions
         Recursive = parse.GetValue(_recursive),
         Fit = parse.GetResult(_fit) is not null ? parse.GetValue(_fit) : null,
         AllImages = parse.GetValue(_allImages),
+        Layout = parse.GetResult(_layout) is not null ? parse.GetValue(_layout) : null,
         ConfigPath = parse.GetValue(_config),
         FfmpegFolder = parse.GetValue(_ffmpegFolder) ?? BundledBinaries.Detect(),
         Quiet = parse.GetValue(_quiet),
@@ -204,6 +207,16 @@ internal sealed class CliOptions
             Description = "How images that do not match the cell shape are fitted: contain, cover, stretch.",
         };
         opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedFits);
+        return opt;
+    }
+
+    private static CommandLine.Option<string?> CreateLayoutOption()
+    {
+        var opt = new CommandLine.Option<string?>("--layout")
+        {
+            Description = "How images are arranged: grid, square (square cells, cropped to fill). Image inputs only.",
+        };
+        opt.AcceptOnlyFromAmong(ImageOptionsFactory.AcceptedLayouts);
         return opt;
     }
 

@@ -48,6 +48,9 @@ public sealed class ImageCollection
     /// <summary>What happens when the collection holds more images than the grid has cells.</summary>
     public ImageSelection Selection { get; set; } = ImageSelection.Sample;
 
+    /// <summary>How the images are arranged on the sheet.</summary>
+    public ImageLayout Layout { get; set; } = new GridLayout();
+
     /// <summary>
     /// Caption drawn on each thumbnail when <see cref="ContactSheetOptions.Timestamp"/> is on.
     /// Defaults to the file name; return <c>null</c> to leave a thumbnail uncaptioned.
@@ -158,11 +161,20 @@ public sealed class ImageCollection
         }
 
         var selected = SelectImages(info, options);
-        var (width, height) = ThumbnailSize(selected[0], options);
+        var (width, height) = Layout switch
+        {
+            GridLayout => ThumbnailSize(selected[0], options),
+            SquareLayout => (Math.Max(1, options.ThumbnailWidth), Math.Max(1, options.ThumbnailWidth)),
+        };
 
-        // Without an explicit loader, letterbox bars take the sheet background, so a portrait
-        // photo in a landscape cell blends into the sheet instead of punching a hole in it.
-        var loader = _loader ?? new SkiaImageLoader(ImageFit.Contain, options.SheetBackground);
+        // Without an explicit loader, square cells are filled by cropping. Otherwise letterbox bars
+        // take the sheet background, so a portrait photo in a landscape cell blends into the sheet
+        // instead of punching a hole in it.
+        var loader = _loader ?? Layout switch
+        {
+            GridLayout => new SkiaImageLoader(ImageFit.Contain, options.SheetBackground),
+            SquareLayout => new SkiaImageLoader(ImageFit.Cover),
+        };
         var thumbs = new List<ContactSheet.Thumbnail>(selected.Count);
 
         try

@@ -30,6 +30,7 @@ internal static class OptionScopeValidator
         ("--fit", settings.Fit is not null),
         ("--recursive", settings.Recursive),
         ("--all", settings.AllImages),
+        ("--layout", settings.Layout is not null),
     ];
 
     private static Option<string> Misapplied(IEnumerable<(string Name, bool Used)> options, string medium, bool applies)

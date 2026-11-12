@@ -16,6 +16,8 @@ internal sealed class ImageConfig
 {
     public string? Fit { get; set; }
 
+    public string? Layout { get; set; }
+
     public bool? Recursive { get; set; }
 
     public bool? All { get; set; }

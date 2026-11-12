@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[filter]` config section.
 - `--padding` (alias `--gap`) sets the space between thumbnails and around the grid, which was
   only configurable as `padding` in `[main]` before. A negative value is an error.
+- `--layout square` for image inputs: square cells, cropped to fill, also as `layout` in the
+  `[image]` config section. Combining it with `--fit` or `--aspect` is an error, since the layout
+  fixes both. In the library, set `ImageCollection.Layout = new SquareLayout()`.
 
 ## [3.0.0] - 2026-11-12
 
