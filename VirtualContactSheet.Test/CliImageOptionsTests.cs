@@ -124,10 +124,7 @@ public class CliImageOptionsTests
     }
 
     private static ImageInput ResolveImages(params string[] arguments)
-    {
-        Assert.True(InputResolver.TryResolve(arguments, out var inputs, out var error), error);
-        return Assert.IsAssignableFrom<ImageInput>(Assert.Single(inputs));
-    }
+        => Assert.IsAssignableFrom<ImageInput>(Assert.Single(Assert.Right(InputResolver.Resolve(arguments))));
 
     private static CliSettings Settings() => new()
     {

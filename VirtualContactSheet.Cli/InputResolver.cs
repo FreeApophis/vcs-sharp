@@ -14,53 +14,38 @@ internal static class InputResolver
 {
     private const string LooseGroupOutputName = "contact-sheet";
 
-    public static bool TryResolve(IReadOnlyList<string> arguments, out IReadOnlyList<SheetInput> inputs, out string? error)
+    /// <summary>The sheets to produce, or the error for the first argument that cannot be expanded.</summary>
+    public static Either<string, IReadOnlyList<SheetInput>> Resolve(IReadOnlyList<string> arguments)
+        => arguments
+            .Traverse(Expand)
+            .Select(expanded => Coalesce([.. expanded.SelectMany(paths => paths).Select(Classify)]));
+
+    /// <summary>Directory, then a known image extension, then video; a loose image starts as a group of one.</summary>
+    private static SheetInput Classify(string path)
+        => path switch
+        {
+            _ when Directory.Exists(path) => ForFolder(path),
+            _ when ImageCollection.IsSupported(path) => ForLooseImages([path]),
+            _ => ForVideo(path),
+        };
+
+    /// <summary>Merges every loose image into one group, placed where the first of them appeared.</summary>
+    private static IReadOnlyList<SheetInput> Coalesce(List<SheetInput> classified)
     {
-        var resolved = new List<SheetInput>();
-        var loose = new List<string>();
-        int looseSlot = -1;
+        var loose = classified.OfType<LooseImagesInput>().SelectMany(single => single.Paths).ToList();
+        var firstLoose = classified.FindIndex(input => input is LooseImagesInput);
 
-        foreach (var argument in arguments)
-        {
-            if (!TryExpand(argument, out var paths, out error))
-            {
-                inputs = [];
-                return false;
-            }
-
-            foreach (var path in paths)
-            {
-                if (Directory.Exists(path))
-                {
-                    resolved.Add(ForFolder(path));
-                }
-                else if (ImageCollection.IsSupported(path))
-                {
-                    // Reserve this slot on the first loose image; the rest join that same group.
-                    if (looseSlot < 0)
-                    {
-                        looseSlot = resolved.Count;
-                        resolved.Add(null!);
-                    }
-
-                    loose.Add(path);
-                }
-                else
-                {
-                    resolved.Add(ForVideo(path));
-                }
-            }
-        }
-
-        if (looseSlot >= 0)
-        {
-            resolved[looseSlot] = ForLooseImages(loose);
-        }
-
-        inputs = resolved;
-        error = null;
-        return true;
+        return [.. classified.WhereSelect((input, index) => Place(input, index == firstLoose, loose))];
     }
+
+    /// <summary>Keeps videos and folders; the first loose image becomes the whole group, the rest drop out.</summary>
+    private static Option<SheetInput> Place(SheetInput input, bool isFirstLoose, IReadOnlyList<string> loose)
+        => input switch
+        {
+            LooseImagesInput when isFirstLoose => ForLooseImages(loose),
+            LooseImagesInput => Option<SheetInput>.None,
+            VideoInput or ImageFolderInput => input,
+        };
 
     private static VideoInput ForVideo(string path)
         => new(Path: path, DisplayName: path, OutputBase: StripExtension(path));
@@ -91,14 +76,11 @@ internal static class InputResolver
     /// Expands a wildcard argument. cmd.exe and PowerShell hand wildcards through verbatim, unlike
     /// a POSIX shell, so the CLI expands them itself to behave the same on every platform.
     /// </summary>
-    private static bool TryExpand(string argument, out IReadOnlyList<string> paths, out string? error)
+    private static Either<string, IReadOnlyList<string>> Expand(string argument)
     {
-        error = null;
-
         if (!argument.Contains('*') && !argument.Contains('?'))
         {
-            paths = [argument];
-            return true;
+            return Paths([argument]);
         }
 
         var directory = Path.GetDirectoryName(argument);
@@ -106,17 +88,13 @@ internal static class InputResolver
 
         if (pattern.Length == 0)
         {
-            paths = [];
-            error = $"Invalid path pattern: '{argument}'.";
-            return false;
+            return Error($"Invalid path pattern: '{argument}'.");
         }
 
         var searchRoot = string.IsNullOrEmpty(directory) ? "." : directory;
         if (!Directory.Exists(searchRoot))
         {
-            paths = [];
-            error = $"No files matched '{argument}'.";
-            return false;
+            return NoMatch(argument);
         }
 
         var matches = Directory
@@ -126,16 +104,21 @@ internal static class InputResolver
 
         if (matches.Count == 0)
         {
-            paths = [];
-            error = $"No files matched '{argument}'.";
-            return false;
+            return NoMatch(argument);
         }
 
         // Keep the caller's spelling: a bare pattern must not gain a "./" prefix.
-        paths = string.IsNullOrEmpty(directory)
+        return Paths(string.IsNullOrEmpty(directory)
             ? [.. matches.Select(match => Path.GetFileName(match)!)]
-            : matches;
-
-        return true;
+            : matches);
     }
+
+    private static Either<string, IReadOnlyList<string>> Paths(IReadOnlyList<string> paths)
+        => Either<string, IReadOnlyList<string>>.Right(paths);
+
+    private static Either<string, IReadOnlyList<string>> Error(string message)
+        => Either<string, IReadOnlyList<string>>.Left(message);
+
+    private static Either<string, IReadOnlyList<string>> NoMatch(string argument)
+        => Error($"No files matched '{argument}'.");
 }
