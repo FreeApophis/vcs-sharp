@@ -8,7 +8,7 @@ public class PipelineTests
         var capturer = new FakeCapturer();
         var video = new Video("fake.mkv", capturer, new FakeProbe());
 
-        var bytes = await video.BuildContactSheetAsync(TextFreeOptions());
+        var bytes = await video.BuildContactSheetAsync(TextFreeOptions(), ct: TestContext.Current.CancellationToken);
         using var decoded = SKBitmap.Decode(bytes);
 
         // Columns*Rows = 4 frames, one capture each (blank evasion disabled).
@@ -24,7 +24,7 @@ public class PipelineTests
     {
         var video = new Video("fake.mkv", new FakeCapturer(), new FakeProbe());
 
-        var bytes = await video.BuildContactSheetAsync(TextFreeOptions());
+        var bytes = await video.BuildContactSheetAsync(TextFreeOptions(), ct: TestContext.Current.CancellationToken);
 
         await Verify(bytes, "png");
     }

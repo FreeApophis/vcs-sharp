@@ -35,6 +35,21 @@ Chicago (classicist) style means:
 - Let design emerge from the tests; don't add interfaces just to mock something.
 - Bug fixes start with a test that reproduces the bug.
 
+### Test stack
+
+- **xUnit v3** (`xunit.v3`) on **Microsoft.Testing.Platform**: `global.json` opts `dotnet test`
+  into MTP, and the test project is an `Exe`. There is no `Microsoft.NET.Test.Sdk`,
+  `xunit.runner.visualstudio` or `coverlet.collector`, since those are VSTest-only.
+- Pass `TestContext.Current.CancellationToken` to anything that takes a `CancellationToken`
+  (analyzer `xUnit1051`, an error under CI's `-warnaserror`).
+- **Funcky.XUnit.v3** for monad assertions: `Assert.Some(expected, option)`, `Assert.None(option)`,
+  `Assert.Ok(...)`, `Assert.Left(...)` / `Assert.Right(...)` (extension members in
+  `Funcky.Extensions`, already imported by the Funcky implicit usings).
+- **Verify.XunitV3** for snapshot tests (`*.verified.*` files next to the tests). Verify 33+
+  requires a SponsorCheck license property: `Directory.Build.props` claims the `OpenSource`
+  exemption, which is time-bounded. When `Verify_SponsorshipExemptionUntil` has passed, the
+  build fails with `SC040`; move the date forward (at most 12 months).
+
 ## Coding style: functional, with Funcky
 
 We write C# in a functional style built on [Funcky](https://github.com/polyadic/funcky).
@@ -65,7 +80,7 @@ We write C# in a functional style built on [Funcky](https://github.com/polyadic/
 |---|---|
 | `VirtualContactSheet/` | Core library (NuGet-packageable) |
 | `VirtualContactSheet.Cli/` | CLI front-end (`vcs` binary) |
-| `VirtualContactSheet.Test/` | xUnit test project |
+| `VirtualContactSheet.Test/` | xUnit v3 test project |
 
 ## Namespaces
 
