@@ -107,12 +107,9 @@ internal static class ColorParser
         {
             // Short forms repeat each digit: #f80 → #ff8800 (17 × d == d << 4 | d).
             3 or 4 => digits.Traverse(HexDigit).Select(nibbles => ToColor([.. nibbles.Select(d => (byte)(d * 17))])),
-            6 or 8 => Pairs(digits).Traverse(HexByte).Select(ToColor),
+            6 or 8 => digits.Chunk(2).Traverse(HexByte).Select(ToColor),
             _ => Option<SKColor>.None,
         };
-
-    private static IEnumerable<string> Pairs(string digits)
-        => Enumerable.Range(0, digits.Length / 2).Select(index => digits.Substring(index * 2, 2));
 
     private static Option<byte> HexByte(string pair)
         => from high in HexDigit(pair[0])
