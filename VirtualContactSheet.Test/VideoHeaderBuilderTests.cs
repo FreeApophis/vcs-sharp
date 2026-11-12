@@ -40,6 +40,21 @@ public class VideoHeaderBuilderTests
     }
 
     [Fact]
+    public void Build_OmitsDimensionsWhenUnknown()
+    {
+        var info = new VideoInfo
+        {
+            FileSize = 1024,
+            Duration = TimeSpan.FromMinutes(1),
+            VideoStreams = [new VideoStream { Codec = "h264", FrameRate = 25 }],
+        };
+
+        var header = VideoHeaderBuilder.Build("clip.mp4", info);
+
+        Assert.Equal(["Format: h264", "FPS: 25"], header.Right);
+    }
+
+    [Fact]
     public void Build_LongVideo_FormatsLengthWithHours()
     {
         var info = new VideoInfo

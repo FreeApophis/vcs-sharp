@@ -17,7 +17,7 @@ public sealed class FfmpegCapturer : IFrameCapturer
         using var ms = new MemoryStream();
 
         var processor = FFMpegArguments
-            .FromFileInput(videoPath, false, input => input.Seek(time.Value))
+            .FromFileInput(videoPath, false, input => input.WithStartTime(time.Value))
             .OutputToPipe(new StreamPipeSink(ms), output =>
             {
                 var scaleFilter = (width > 0, height > 0) switch
@@ -34,7 +34,7 @@ public sealed class FfmpegCapturer : IFrameCapturer
                 }
 
                 output.WithVideoCodec("png")
-                      .WithFrameOutputCount(1)
+                      .WithFrameCount(1)
                       .ForceFormat("image2pipe");
             });
 

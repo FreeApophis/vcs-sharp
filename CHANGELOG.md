@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated FFMpegCore from 5.4.0 to 6.0.0. Library consumers that also reference FFMpegCore
+  directly need 6.x, since its API changed in breaking ways.
+- **Breaking (library):** `VideoStream.Width`, `VideoStream.Height` and `AudioStream.Channels` are
+  now Funcky `Option<int>` instead of `int`, because ffprobe does not always report them. An
+  `int` still converts implicitly, so object initialisers keep compiling, but reads need to
+  handle the absent case.
+- Updated to .NET 11
+
+### Fixed
+
+- A video whose dimensions ffprobe cannot determine no longer shows `Dimensions: 0x0` in the
+  header; the line is left out.
+
 ## [2.0.0] - 2026-09-24
 
 The project is renamed, and with it the NuGet packages: `VideoContactSheet` becomes

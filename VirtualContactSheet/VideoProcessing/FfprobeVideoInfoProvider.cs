@@ -21,7 +21,7 @@ public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
 
         try
         {
-            IMediaAnalysis analysis = await FFProbe.AnalyseAsync(path, _ffOptions, ct).ConfigureAwait(false);
+            IMediaAnalysis analysis = await FFProbe.AnalyseAsync(path, _ffOptions, cancellationToken: ct).ConfigureAwait(false);
 
             return ToVideoInfo(path, analysis);
         }
@@ -52,7 +52,7 @@ public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
         {
             Index = s.Index,
             Codec = s.CodecName,
-            Channels = s.Channels,
+            Channels = Option.FromNullable(s.Channels),
             ChannelLayout = s.ChannelLayout,
             SampleRate = s.SampleRateHz,
             BitRate = s.BitRate,
@@ -64,11 +64,11 @@ public sealed class FfprobeVideoInfoProvider : IVideoInfoProvider
             Index = s.Index,
             Codec = s.CodecName,
             Profile = s.Profile,
-            Width = s.Width,
-            Height = s.Height,
+            Width = Option.FromNullable(s.Width),
+            Height = Option.FromNullable(s.Height),
             PixelFormat = s.PixelFormat,
             BitRate = s.BitRate,
-            FrameRate = s.FrameRate,
+            FrameRate = s.RealFrameRate,
             DisplayAspectRatio = s.DisplayAspectRatio.Width > 0
                             ? $"{s.DisplayAspectRatio.Width}:{s.DisplayAspectRatio.Height}"
                             : null,

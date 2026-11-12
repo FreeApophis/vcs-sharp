@@ -17,7 +17,7 @@ public static class VideoHeaderBuilder
         var right = new List<string>();
         if (videoInfo is not null)
         {
-            right.Add($"Dimensions: {videoInfo.Width}x{videoInfo.Height}");
+            Dimensions(videoInfo).AndThen(right.Add);
         }
 
         var format = FormatCodecs(videoInfo, audioInfo);
@@ -33,6 +33,11 @@ public static class VideoHeaderBuilder
 
         return right;
     }
+
+    private static Option<string> Dimensions(VideoStream video)
+        => from width in video.Width
+           from height in video.Height
+           select $"Dimensions: {width}x{height}";
 
     private static List<string> LeftColumn(string fileName, VideoInfo info)
         =>
