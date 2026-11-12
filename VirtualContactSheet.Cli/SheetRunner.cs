@@ -80,21 +80,21 @@ internal static class SheetRunner
             Console.WriteLine($"Processing: {input.DisplayName} -> {output}");
         }
 
-        return input.Kind switch
+        return input switch
         {
-            SheetInputKind.Images => ProcessImagesAsync(input, output, options, imageOptions, settings, ct),
-            _ => ProcessVideoAsync(input, output, options, settings, ct),
+            VideoInput video => ProcessVideoAsync(video, output, options, settings, ct),
+            ImageInput images => ProcessImagesAsync(images, output, options, imageOptions, settings, ct),
         };
     }
 
     private static async Task ProcessVideoAsync(
-        SheetInput input,
+        VideoInput input,
         string output,
         ContactSheetOptions options,
         CliSettings settings,
         CancellationToken ct)
     {
-        var video = new Video(input.Paths[0], ffBinaryFolder: settings.FfmpegFolder);
+        var video = new Video(input.Path, ffBinaryFolder: settings.FfmpegFolder);
         if (!await video.IsValidAsync(ct))
         {
             throw new CaptureException("Not a valid video or no video stream.");
@@ -105,7 +105,7 @@ internal static class SheetRunner
     }
 
     private static async Task ProcessImagesAsync(
-        SheetInput input,
+        ImageInput input,
         string output,
         ContactSheetOptions options,
         ImageOptions imageOptions,
@@ -115,9 +115,11 @@ internal static class SheetRunner
         var collection = ImageOptionsFactory.Create(input, imageOptions);
         if (collection.Count == 0)
         {
-            throw new CaptureException(input.Folder is { } folder
-                ? $"No supported images found in '{folder}'."
-                : "No supported images given.");
+            throw new CaptureException(input switch
+            {
+                ImageFolderInput folder => $"No supported images found in '{folder.Folder}'.",
+                LooseImagesInput => "No supported images given.",
+            });
         }
 
         await collection.SaveContactSheetAsync(output, options, Progress(settings), ct);

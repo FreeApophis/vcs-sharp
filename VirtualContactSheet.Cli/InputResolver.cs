@@ -32,7 +32,7 @@ internal static class InputResolver
             {
                 if (Directory.Exists(path))
                 {
-                    resolved.Add(FolderInput(path));
+                    resolved.Add(ForFolder(path));
                 }
                 else if (ImageCollection.IsSupported(path))
                 {
@@ -47,14 +47,14 @@ internal static class InputResolver
                 }
                 else
                 {
-                    resolved.Add(VideoInput(path));
+                    resolved.Add(ForVideo(path));
                 }
             }
         }
 
         if (looseSlot >= 0)
         {
-            resolved[looseSlot] = LooseImagesInput(loose);
+            resolved[looseSlot] = ForLooseImages(loose);
         }
 
         inputs = resolved;
@@ -62,38 +62,24 @@ internal static class InputResolver
         return true;
     }
 
-    private static SheetInput VideoInput(string path) => new()
-    {
-        Kind = SheetInputKind.Video,
-        Paths = [path],
-        DisplayName = path,
-        OutputBase = StripExtension(path),
-    };
+    private static VideoInput ForVideo(string path)
+        => new(Path: path, DisplayName: path, OutputBase: StripExtension(path));
 
-    private static SheetInput FolderInput(string folder)
+    private static ImageFolderInput ForFolder(string folder)
     {
         // "photos/holiday" and "photos/holiday/" must both yield "photos/holiday.png".
         var trimmed = Path.TrimEndingDirectorySeparator(folder);
 
-        return new SheetInput
-        {
-            Kind = SheetInputKind.Images,
-            Paths = [trimmed],
-            Folder = trimmed,
-            DisplayName = trimmed,
-            OutputBase = trimmed,
-        };
+        return new(Folder: trimmed, DisplayName: trimmed, OutputBase: trimmed);
     }
 
-    private static SheetInput LooseImagesInput(IReadOnlyList<string> paths) => new()
-    {
-        Kind = SheetInputKind.Images,
-        Paths = paths,
-        DisplayName = paths.Count == 1 ? paths[0] : $"{paths.Count} images",
+    private static LooseImagesInput ForLooseImages(IReadOnlyList<string> paths)
+        => new(
+            Paths: paths,
+            DisplayName: paths.Count == 1 ? paths[0] : $"{paths.Count} images",
 
-        // A group of files has no name of its own, so it lands in the working directory.
-        OutputBase = paths.Count == 1 ? StripExtension(paths[0]) : LooseGroupOutputName,
-    };
+            // A group of files has no name of its own, so it lands in the working directory.
+            OutputBase: paths.Count == 1 ? StripExtension(paths[0]) : LooseGroupOutputName);
 
     private static string StripExtension(string path)
     {

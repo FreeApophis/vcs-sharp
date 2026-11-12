@@ -9,8 +9,8 @@ internal static class OptionScopeValidator
 {
     public static bool Validate(CliSettings settings, IReadOnlyList<SheetInput> inputs, out string? error)
     {
-        bool hasVideo = inputs.Any(input => input.Kind == SheetInputKind.Video);
-        bool hasImages = inputs.Any(input => input.Kind == SheetInputKind.Images);
+        bool hasVideo = inputs.Any(input => input is VideoInput);
+        bool hasImages = inputs.Any(input => input is ImageInput);
 
         if (!hasVideo && Misapplied(VideoOnly(settings)) is { } videoOption)
         {

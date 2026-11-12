@@ -231,7 +231,14 @@ asymmetry lives: a video and a directory each make their own sheet, but N loose 
 one, so they are coalesced into a group at the position of the first. Detection order is
 `Directory.Exists`, then `ImageCollection.IsSupported`, then video — so an unrecognised extension
 still resolves to video, as it did before image support. `OptionScopeValidator` then rejects
-options that cannot apply to any resolved input, and `SheetRunner` switches on the kind.
+options that cannot apply to any resolved input, and `SheetRunner` switches on the input type.
+
+`SheetInput` is a C# 15 **closed hierarchy** (`SheetInput.cs`): `VideoInput`, and the closed
+`ImageInput` with `ImageFolderInput` / `LooseImagesInput`. Each case carries only its own data, so
+image-only code takes an `ImageInput` and video code a `VideoInput`. Switch over these without a
+`_` discard arm: the compiler then checks exhaustiveness, and adding a new input kind fails the
+build (CS8509 under `-warnaserror`) at every switch that does not handle it yet. A `closed` type
+is implicitly abstract; don't mark it `abstract` too (CS9384).
 
 ## Changelog
 
