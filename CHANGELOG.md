@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A partly corrupt video no longer fails the whole sheet when ffmpeg cannot capture one of its
+  frames (e.g. `ffmpeg returned no data`). That frame's cell shows a gray placeholder with a
+  circled warning icon (keeping its timestamp), and the rest of the sheet is built as usual; it
+  only fails if no frame can be captured at all. During blank-frame evasion, an
+  alternative that cannot be captured is skipped as well.
 - A video whose dimensions ffprobe cannot determine no longer shows `Dimensions: 0x0` in the
   header; the line is left out.
 - A path that does not exist is no longer treated as a video that then fails with "Not a valid
