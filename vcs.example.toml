@@ -51,6 +51,11 @@ size       = 33
 color      = "#000000"
 background = "#ffffff"
 
+[style.thumbnail]
+corner_radius = 0          # round the thumbnail corners (pixels); captions are clipped with them
+border_width  = 0          # border drawn just inside each thumbnail's edge (pixels)
+border_color  = "#000000"
+
 [style.timestamp]
 size       = 14
 color      = "#ffffff"

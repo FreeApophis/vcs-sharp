@@ -105,8 +105,19 @@ internal static class ConfigLoader
             target.Style.Signature = MergeTextStyle(target.Style.Signature, style.Signature);
             target.Style.Contact = MergeBackground(target.Style.Contact, style.Contact);
             target.Style.Highlight = MergeBackground(target.Style.Highlight, style.Highlight);
+            target.Style.Thumbnail = MergeThumbnailStyle(target.Style.Thumbnail, style.Thumbnail);
         }
     }
+
+    private static ThumbnailStyleConfig? MergeThumbnailStyle(ThumbnailStyleConfig? target, ThumbnailStyleConfig? source)
+        => source is null
+            ? target
+            : new ThumbnailStyleConfig
+            {
+                CornerRadius = source.CornerRadius ?? target?.CornerRadius,
+                BorderWidth = source.BorderWidth ?? target?.BorderWidth,
+                BorderColor = source.BorderColor ?? target?.BorderColor,
+            };
 
     private static TextStyleConfig? MergeTextStyle(TextStyleConfig? target, TextStyleConfig? source)
     {

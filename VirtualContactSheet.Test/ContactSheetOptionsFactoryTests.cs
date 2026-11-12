@@ -187,6 +187,46 @@ public class ContactSheetOptionsFactoryTests
         Assert.Contains("--padding", error);
     }
 
+    [Fact]
+    public void CornersAndBorder_FromTheCommandLine_OverrideConfig()
+    {
+        var config = new VcsConfig
+        {
+            Style = new StyleConfig { Thumbnail = new ThumbnailStyleConfig { CornerRadius = 4, BorderWidth = 1, BorderColor = "#00ff00" } },
+        };
+        var settings = Settings() with { CornerRadius = 12, BorderWidth = 2, BorderColor = "#ff0000" };
+
+        var fromConfig = Assert.Right(ContactSheetOptionsFactory.Create(Settings(), config));
+        var fromCli = Assert.Right(ContactSheetOptionsFactory.Create(settings, config));
+
+        Assert.Equal((4, 1, SKColors.Lime), (fromConfig.CornerRadius, fromConfig.BorderWidth, fromConfig.BorderColor));
+        Assert.Equal((12, 2, SKColors.Red), (fromCli.CornerRadius, fromCli.BorderWidth, fromCli.BorderColor));
+    }
+
+    [Fact]
+    public void NegativeCornerRadius_FailsWithError()
+    {
+        var error = Assert.Left(ContactSheetOptionsFactory.Create(Settings() with { CornerRadius = -1 }));
+
+        Assert.Contains("--corner-radius", error);
+    }
+
+    [Fact]
+    public void NegativeBorderWidth_FailsWithError()
+    {
+        var error = Assert.Left(ContactSheetOptionsFactory.Create(Settings() with { BorderWidth = -1 }));
+
+        Assert.Contains("--border-width", error);
+    }
+
+    [Fact]
+    public void InvalidBorderColor_FailsWithError()
+    {
+        var error = Assert.Left(ContactSheetOptionsFactory.Create(Settings() with { BorderColor = "reddish" }));
+
+        Assert.Contains("--border-color", error);
+    }
+
     private static CliSettings Settings() => new()
     {
         Files = ["in.mkv"],

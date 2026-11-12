@@ -254,6 +254,7 @@ vcs holiday/ --fit cover -c 5 -r 4    # crop to fill the cells instead of letter
 vcs holiday/*.jpg -o summer.jpg -f jpg
 vcs holiday/ --no-header --gap 0      # just the pictures, edge to edge
 vcs holiday/ --layout square          # square cells, cropped to fill
+vcs holiday/ --layout square --corner-radius 16 --border-width 3 --border-color "#ffffff"
 ```
 
 Each video and each folder produces its own sheet; loose image files are combined into a single
@@ -266,6 +267,7 @@ PowerShell as it does in a POSIX shell.
 | `--format`, `--output`, `--title`, `--signature` | ✅ | ✅ |
 | `--timestamp` (caption: time index / file name) | ✅ | ✅ |
 | `--polaroid`, `--shadow`, `--header` | ✅ | ✅ |
+| `--corner-radius`, `--border-width`, `--border-color` | ✅ | ✅ |
 | `--interval`, `--from`, `--to`, `--highlight` | ✅ | — |
 | `--recursive`, `--fit`, `--all`, `--layout` | — | ✅ |
 

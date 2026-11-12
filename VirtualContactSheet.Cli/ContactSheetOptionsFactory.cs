@@ -1,4 +1,5 @@
 using System.Globalization;
+using SkiaSharp;
 
 namespace VirtualContactSheet.Cli;
 
@@ -10,25 +11,23 @@ namespace VirtualContactSheet.Cli;
 internal static class ContactSheetOptionsFactory
 {
     /// <summary>
-    /// The sheet options, or the error for the first invalid <c>--highlight</c>, <c>--aspect</c>
-    /// or <c>--padding</c>.
+    /// The sheet options, or the error for the first invalid <c>--highlight</c>, <c>--aspect</c>,
+    /// <c>--padding</c>, <c>--corner-radius</c>, <c>--border-width</c> or <c>--border-color</c>.
     /// </summary>
     public static Either<string, ContactSheetOptions> Create(CliSettings settings, VcsConfig config)
         => from highlights in ParseHighlights(settings.HighlightStrings)
            from aspectRatio in ParseAspectRatioSetting(settings.AspectRatio)
-           from padding in ValidatePadding(settings.Padding)
-           select Build(settings, config, highlights, aspectRatio, padding);
+           from padding in NonNegative(settings.Padding, "--padding")
+           from cornerRadius in NonNegative(settings.CornerRadius, "--corner-radius")
+           from borderWidth in NonNegative(settings.BorderWidth, "--border-width")
+           from borderColor in ParseColorSetting(settings.BorderColor, "--border-color")
+           select Build(settings, config, new Validated(highlights, aspectRatio, padding, cornerRadius, borderWidth, borderColor));
 
     /// <summary>Convenience overload used by tests; equivalent to an empty config.</summary>
     public static Either<string, ContactSheetOptions> Create(CliSettings settings)
         => Create(settings, new VcsConfig());
 
-    private static ContactSheetOptions Build(
-        CliSettings settings,
-        VcsConfig config,
-        IReadOnlyList<TimeIndex> highlights,
-        Option<float> aspectRatio,
-        Option<int> padding)
+    private static ContactSheetOptions Build(CliSettings settings, VcsConfig config, Validated validated)
     {
         var result = new ContactSheetOptions();
 
@@ -55,7 +54,7 @@ internal static class ContactSheetOptionsFactory
             result.Format = Formats.Parse(format);
         }
 
-        result.Highlights.AddRange(highlights);
+        result.Highlights.AddRange(validated.Highlights);
 
         if (settings.Interval.HasValue)
         {
@@ -97,8 +96,11 @@ internal static class ContactSheetOptionsFactory
             result.ThumbnailHeight = settings.Height;
         }
 
-        result.AspectRatio = aspectRatio.GetOrElse(result.AspectRatio);
-        result.Padding = padding.GetOrElse(result.Padding);
+        result.AspectRatio = validated.AspectRatio.GetOrElse(result.AspectRatio);
+        result.Padding = validated.Padding.GetOrElse(result.Padding);
+        result.CornerRadius = validated.CornerRadius.GetOrElse(result.CornerRadius);
+        result.BorderWidth = validated.BorderWidth.GetOrElse(result.BorderWidth);
+        result.BorderColor = validated.BorderColor.GetOrElse(result.BorderColor);
 
         return result;
     }
@@ -178,6 +180,14 @@ internal static class ContactSheetOptionsFactory
 
             result.SheetBackground = ColorParser.Parse(style.Contact?.Background).GetOrElse(result.SheetBackground);
             result.HighlightBackground = ColorParser.Parse(style.Highlight?.Background).GetOrElse(result.HighlightBackground);
+
+            // Like the colors, an invalid (negative) config size is ignored.
+            if (style.Thumbnail is { } thumbnail)
+            {
+                result.CornerRadius = Option.FromNullable(thumbnail.CornerRadius).Where(r => r >= 0).GetOrElse(result.CornerRadius);
+                result.BorderWidth = Option.FromNullable(thumbnail.BorderWidth).Where(w => w >= 0).GetOrElse(result.BorderWidth);
+                result.BorderColor = ColorParser.Parse(thumbnail.BorderColor).GetOrElse(result.BorderColor);
+            }
         }
     }
 
@@ -228,11 +238,16 @@ internal static class ContactSheetOptionsFactory
         }
     }
 
-    /// <summary>None when <c>--padding</c> was not given; an error when it is negative.</summary>
-    private static Either<string, Option<int>> ValidatePadding(int? value)
-        => Option.FromNullable(value).Traverse(padding => padding >= 0
-            ? Either<string, int>.Right(padding)
-            : Either<string, int>.Left($"Invalid --padding {padding}: must be 0 or more."));
+    /// <summary>None when the option was not given; an error when it is negative.</summary>
+    private static Either<string, Option<int>> NonNegative(int? value, string name)
+        => Option.FromNullable(value).Traverse(number => number >= 0
+            ? Either<string, int>.Right(number)
+            : Either<string, int>.Left($"Invalid {name} {number}: must be 0 or more."));
+
+    /// <summary>None when the option was not given; an error when it is not a color.</summary>
+    private static Either<string, Option<SKColor>> ParseColorSetting(string? value, string name)
+        => Option.FromNullable(value).Traverse(text => ColorParser.Parse(text)
+            .ToEither($"Invalid {name} '{text}'. Expected a hex color such as #rrggbb or #rrggbbaa."));
 
     private static Either<string, IReadOnlyList<TimeIndex>> ParseHighlights(IReadOnlyList<string> values)
         => values.Traverse(value => ParseTimeIndex(value).ToEither($"Invalid highlight time: '{value}'"));
@@ -262,4 +277,13 @@ internal static class ContactSheetOptionsFactory
 
     private static Option<TimeIndex> ParseTimeIndex(string text)
         => TimeIndex.TryParse(text, out var time) ? time : Option<TimeIndex>.None;
+
+    /// <summary>The command line values that needed parsing or validation.</summary>
+    private sealed record Validated(
+        IReadOnlyList<TimeIndex> Highlights,
+        Option<float> AspectRatio,
+        Option<int> Padding,
+        Option<int> CornerRadius,
+        Option<int> BorderWidth,
+        Option<SKColor> BorderColor);
 }

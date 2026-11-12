@@ -59,6 +59,14 @@ public sealed class ContactSheetOptions
 
     public bool Polaroid { get; set; }
 
+    /// <summary>Radius of the thumbnails' rounded corners in pixels; 0 (default) for square corners.</summary>
+    public int CornerRadius { get; set; }
+
+    /// <summary>Width of the border drawn just inside each thumbnail's edge; 0 (default) for none.</summary>
+    public int BorderWidth { get; set; }
+
+    public SKColor BorderColor { get; set; } = SKColors.Black;
+
     public bool SoftShadow { get; set; } = true;
 
     public int ShadowSize { get; set; } = 6;

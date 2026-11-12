@@ -36,5 +36,22 @@ public sealed class ConfigLoaderTests : IDisposable
         Assert.Equal("square", config.Image?.Layout);
     }
 
+    [Fact]
+    public void Load_ExplicitFile_KeepsTheThumbnailStyle()
+    {
+        File.WriteAllText(_path, """
+            [style.thumbnail]
+            corner_radius = 12
+            border_width  = 2
+            border_color  = "#ff0000"
+            """);
+
+        var config = ConfigLoader.Load(_path);
+
+        Assert.Equal(12, config.Style?.Thumbnail?.CornerRadius);
+        Assert.Equal(2, config.Style?.Thumbnail?.BorderWidth);
+        Assert.Equal("#ff0000", config.Style?.Thumbnail?.BorderColor);
+    }
+
     public void Dispose() => File.Delete(_path);
 }

@@ -102,6 +102,21 @@ internal sealed class CliOptions
 
     private readonly CommandLine.Option<bool> _noShadow = new("--no-shadow") { Description = "Disable drop shadow." };
 
+    private readonly CommandLine.Option<int?> _cornerRadius = new("--corner-radius")
+    {
+        Description = "Round the thumbnail corners with this radius in pixels (default: 0).",
+    };
+
+    private readonly CommandLine.Option<int?> _borderWidth = new("--border-width")
+    {
+        Description = "Draw a border of this width in pixels inside each thumbnail's edge (default: 0).",
+    };
+
+    private readonly CommandLine.Option<string?> _borderColor = new("--border-color")
+    {
+        Description = "Border color as hex: #rrggbb or #rrggbbaa (default: #000000).",
+    };
+
     // ── Image options ────────────────────────────────────────────────────────────
     private readonly CommandLine.Option<bool> _recursive = new("--recursive")
     {
@@ -146,6 +161,7 @@ internal sealed class CliOptions
             _timestamp, _noTimestamp,
             _polaroid, _noPolaroid,
             _shadow, _noShadow,
+            _cornerRadius, _borderWidth, _borderColor,
             _recursive, _fit, _allImages, _layout,
             _config, _ffmpegFolder, _quiet, _continue,
         };
@@ -177,6 +193,9 @@ internal sealed class CliOptions
         NoPolaroid = parse.GetValue(_noPolaroid),
         UseShadow = parse.GetValue(_shadow),
         NoShadow = parse.GetValue(_noShadow),
+        CornerRadius = parse.GetValue(_cornerRadius),
+        BorderWidth = parse.GetValue(_borderWidth),
+        BorderColor = parse.GetValue(_borderColor),
         UseHeader = parse.GetValue(_header),
         NoHeader = parse.GetValue(_noHeader),
         Recursive = parse.GetValue(_recursive),

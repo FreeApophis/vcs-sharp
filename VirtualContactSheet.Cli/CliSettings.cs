@@ -59,6 +59,15 @@ internal sealed record CliSettings
     /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
     public int? Padding { get; init; }
 
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? CornerRadius { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public int? BorderWidth { get; init; }
+
+    /// <summary>Null when not provided on the command line; falls back to config then library default.</summary>
+    public string? BorderColor { get; init; }
+
     public bool NoShadow { get; init; }
 
     /// <summary>Recurse into subfolders of an image folder.</summary>

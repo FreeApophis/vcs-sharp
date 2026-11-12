@@ -66,6 +66,18 @@ internal sealed class StyleConfig
     public BackgroundConfig? Contact { get; set; }
 
     public BackgroundConfig? Highlight { get; set; }
+
+    public ThumbnailStyleConfig? Thumbnail { get; set; }
+}
+
+/// <summary>The <c>[style.thumbnail]</c> section: how each thumbnail is framed.</summary>
+internal sealed class ThumbnailStyleConfig
+{
+    public int? CornerRadius { get; set; }
+
+    public int? BorderWidth { get; set; }
+
+    public string? BorderColor { get; set; }
 }
 
 internal sealed class TextStyleConfig
